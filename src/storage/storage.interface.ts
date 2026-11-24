@@ -1,5 +1,15 @@
 import { Readable } from 'stream';
 
+export interface StorageConfig {
+  provider?: 's3' | 'minio' | 'aws' | string;
+  bucket: string;
+  endpoint?: string;
+  region?: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+  forcePathStyle?: boolean;
+}
+
 export interface UploadInput {
   key: string;
   body: Buffer | Readable;
@@ -41,8 +51,7 @@ export interface StorageItem {
 /**
  * Storage Service Interface
  * All storage implementations (S3, MinIO, Azure Blob, Google Cloud Storage, Local Disk)
- * adhere to this exact interface. Business controllers ONLY consume this interface,
- * ensuring complete decoupling from specific cloud providers.
+ * adhere to this exact interface.
  */
 export interface IStorageService {
   ensureBucketExists(): Promise<void>;

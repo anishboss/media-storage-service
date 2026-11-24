@@ -1,11 +1,22 @@
 import { Request, Response, NextFunction } from 'express';
 import fs from 'fs';
 import path from 'path';
+import { IStorageService } from '../storage/storage.interface.js';
 import { StorageFactory } from '../storage/storage.factory.js';
 import { generateStorageKey, detectCategory, MediaCategory } from '../utils/media-type.util.js';
 
 export class MediaController {
-  private static get storageService() {
+  private customStorageService?: IStorageService;
+
+  constructor(storageService?: IStorageService) {
+    this.customStorageService = storageService;
+  }
+
+  private get service(): IStorageService {
+    return this.customStorageService || StorageFactory.getStorageService();
+  }
+
+  private static get defaultService(): IStorageService {
     return StorageFactory.getStorageService();
   }
 
@@ -17,14 +28,8 @@ export class MediaController {
 
   /**
    * 1. Direct Server Upload
-   * Accepts any file (image, video, document, audio, generic file),
-   * auto-categorizes it, and streams it to object storage (MinIO / AWS S3) via multipart upload.
    */
-  public static async uploadDirect(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
+  public uploadDirect = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const file = req.file;
     if (!file) {
       res.status(400).json({ success: false, message: 'No file provided' });
@@ -41,7 +46,7 @@ export class MediaController {
     try {
       const fileStream = fs.createReadStream(file.path);
 
-      const result = await MediaController.storageService.upload({
+      const result = await this.service.upload({
         key,
         body: fileStream,
         contentType,
@@ -53,9 +58,7 @@ export class MediaController {
         },
       });
 
-      // Cleanup local temporary file from disk
       await fs.promises.unlink(file.path).catch(() => {});
-
       const encodedKey = encodeURIComponent(result.key);
 
       res.status(201).json({
@@ -79,18 +82,12 @@ export class MediaController {
       }
       next(error);
     }
-  }
+  };
 
   /**
-   * 2. Presigned URL Direct Upload (Production Standard for Multi-GB Files)
-   * Client requests a signed PUT URL for an image, video, or large dataset,
-   * then uploads directly to MinIO or AWS S3.
+   * 2. Presigned URL Direct Upload
    */
-  public static async getPresignedUploadUrl(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
+  public getPresignedUploadUrl = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { fileName, contentType: inputContentType, category: inputCategory } = req.body;
 
@@ -105,10 +102,10 @@ export class MediaController {
         inputCategory
       );
 
-      const presignedData = await MediaController.storageService.getUploadPresignedUrl(
+      const presignedData = await this.service.getUploadPresignedUrl(
         key,
         contentType,
-        3600 // Valid for 1 hour
+        3600
       );
 
       res.status(200).json({
@@ -128,26 +125,18 @@ export class MediaController {
     } catch (error) {
       next(error);
     }
-  }
+  };
 
   /**
    * 3. View / Stream Media
-   * Handles:
-   * - Video/Audio: HTTP 206 Partial Content range requests (instant seeking)
-   * - Images: Inline browser display (PNG, JPEG, WebP, SVG, GIF)
-   * - Documents: Inline PDF/document rendering
    */
-  public static async viewOrStreamMedia(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
+  public viewOrStreamMedia = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const key = MediaController.getParamKey(req);
       const range = req.headers.range;
 
       const { stream, contentLength, contentType, contentRange, acceptRanges } =
-        await MediaController.storageService.getObjectStream(key, range);
+        await this.service.getObjectStream(key, range);
 
       const resolvedContentType = contentType || 'application/octet-stream';
 
@@ -176,23 +165,18 @@ export class MediaController {
       }
       next(error);
     }
-  }
+  };
 
   /**
    * 4. Force File Download
-   * Sets Content-Disposition: attachment to prompt download dialog.
    */
-  public static async downloadMedia(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
+  public downloadMedia = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const key = MediaController.getParamKey(req);
       const fileName = path.basename(key);
 
       const { stream, contentLength, contentType } =
-        await MediaController.storageService.getObjectStream(key);
+        await this.service.getObjectStream(key);
 
       res.writeHead(200, {
         'Content-Length': contentLength,
@@ -208,19 +192,15 @@ export class MediaController {
       }
       next(error);
     }
-  }
+  };
 
   /**
    * 5. Get Presigned Download/Playback URL
    */
-  public static async getPresignedDownloadUrl(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
+  public getPresignedDownloadUrl = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const key = MediaController.getParamKey(req);
-      const downloadUrl = await MediaController.storageService.getDownloadPresignedUrl(key);
+      const downloadUrl = await this.service.getDownloadPresignedUrl(key);
 
       res.status(200).json({
         success: true,
@@ -233,22 +213,17 @@ export class MediaController {
     } catch (error) {
       next(error);
     }
-  }
+  };
 
   /**
-   * 6. List Media with Optional Category Filter
-   * Query params: ?category=images | videos | documents | audio | files
+   * 6. List Media
    */
-  public static async listMedia(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
+  public listMedia = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const category = req.query.category as string | undefined;
       const prefix = category ? `${category}/` : undefined;
 
-      const items = await MediaController.storageService.list(prefix);
+      const items = await this.service.list(prefix);
 
       const formatted = items.map((item) => {
         const itemCategory = detectCategory(undefined, item.key);
@@ -272,19 +247,15 @@ export class MediaController {
     } catch (error) {
       next(error);
     }
-  }
+  };
 
   /**
    * 7. Delete Media
    */
-  public static async deleteMedia(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
+  public deleteMedia = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const key = MediaController.getParamKey(req);
-      await MediaController.storageService.delete(key);
+      await this.service.delete(key);
 
       res.status(200).json({
         success: true,
@@ -293,5 +264,22 @@ export class MediaController {
     } catch (error) {
       next(error);
     }
-  }
+  };
+
+  // Static backward compatibility wrappers for existing server routes
+  private static defaultController = new MediaController();
+  public static uploadDirect = (req: Request, res: Response, next: NextFunction) =>
+    MediaController.defaultController.uploadDirect(req, res, next);
+  public static getPresignedUploadUrl = (req: Request, res: Response, next: NextFunction) =>
+    MediaController.defaultController.getPresignedUploadUrl(req, res, next);
+  public static viewOrStreamMedia = (req: Request, res: Response, next: NextFunction) =>
+    MediaController.defaultController.viewOrStreamMedia(req, res, next);
+  public static downloadMedia = (req: Request, res: Response, next: NextFunction) =>
+    MediaController.defaultController.downloadMedia(req, res, next);
+  public static getPresignedDownloadUrl = (req: Request, res: Response, next: NextFunction) =>
+    MediaController.defaultController.getPresignedDownloadUrl(req, res, next);
+  public static listMedia = (req: Request, res: Response, next: NextFunction) =>
+    MediaController.defaultController.listMedia(req, res, next);
+  public static deleteMedia = (req: Request, res: Response, next: NextFunction) =>
+    MediaController.defaultController.deleteMedia(req, res, next);
 }
