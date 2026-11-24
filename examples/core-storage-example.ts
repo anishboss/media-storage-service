@@ -25,7 +25,10 @@ async function main() {
 
   // List existing files in storage
   const list = await storage.list();
-  console.log(`Found ${list.length} item(s) in bucket:`, list.map(i => i.key));
+  console.log(
+    `Found ${list.length} item(s) in bucket:`,
+    list.map((i) => i.key)
+  );
 }
 
 main().catch(console.error);

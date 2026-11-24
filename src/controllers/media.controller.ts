@@ -87,7 +87,11 @@ export class MediaController {
   /**
    * 2. Presigned URL Direct Upload
    */
-  public getPresignedUploadUrl = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  public getPresignedUploadUrl = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const { fileName, contentType: inputContentType, category: inputCategory } = req.body;
 
@@ -102,11 +106,7 @@ export class MediaController {
         inputCategory
       );
 
-      const presignedData = await this.service.getUploadPresignedUrl(
-        key,
-        contentType,
-        3600
-      );
+      const presignedData = await this.service.getUploadPresignedUrl(key, contentType, 3600);
 
       res.status(200).json({
         success: true,
@@ -130,7 +130,11 @@ export class MediaController {
   /**
    * 3. View / Stream Media
    */
-  public viewOrStreamMedia = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  public viewOrStreamMedia = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const key = MediaController.getParamKey(req);
       const range = req.headers.range;
@@ -158,8 +162,9 @@ export class MediaController {
       }
 
       stream.pipe(res);
-    } catch (error: any) {
-      if (error.name === 'NoSuchKey' || error.$metadata?.httpStatusCode === 404) {
+    } catch (error: unknown) {
+      const err = error as { name?: string; $metadata?: { httpStatusCode?: number } };
+      if (err.name === 'NoSuchKey' || err.$metadata?.httpStatusCode === 404) {
         res.status(404).json({ success: false, message: 'Object not found in storage' });
         return;
       }
@@ -175,8 +180,7 @@ export class MediaController {
       const key = MediaController.getParamKey(req);
       const fileName = path.basename(key);
 
-      const { stream, contentLength, contentType } =
-        await this.service.getObjectStream(key);
+      const { stream, contentLength, contentType } = await this.service.getObjectStream(key);
 
       res.writeHead(200, {
         'Content-Length': contentLength,
@@ -185,8 +189,9 @@ export class MediaController {
       });
 
       stream.pipe(res);
-    } catch (error: any) {
-      if (error.name === 'NoSuchKey' || error.$metadata?.httpStatusCode === 404) {
+    } catch (error: unknown) {
+      const err = error as { name?: string; $metadata?: { httpStatusCode?: number } };
+      if (err.name === 'NoSuchKey' || err.$metadata?.httpStatusCode === 404) {
         res.status(404).json({ success: false, message: 'Object not found' });
         return;
       }
@@ -197,7 +202,11 @@ export class MediaController {
   /**
    * 5. Get Presigned Download/Playback URL
    */
-  public getPresignedDownloadUrl = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  public getPresignedDownloadUrl = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const key = MediaController.getParamKey(req);
       const downloadUrl = await this.service.getDownloadPresignedUrl(key);

@@ -10,12 +10,14 @@ export function createStorageClient(options?: Partial<StorageConfig>): IStorageS
   const provider = (options?.provider || defaultEnvConfig.storage.provider || 's3').toLowerCase();
   const bucket = options?.bucket || defaultEnvConfig.storage.bucket;
   const region = options?.region || defaultEnvConfig.storage.region || 'us-east-1';
-  const endpoint = options?.endpoint !== undefined ? options.endpoint : defaultEnvConfig.storage.endpoint;
+  const endpoint =
+    options?.endpoint !== undefined ? options.endpoint : defaultEnvConfig.storage.endpoint;
   const accessKeyId = options?.accessKeyId || defaultEnvConfig.storage.accessKeyId;
   const secretAccessKey = options?.secretAccessKey || defaultEnvConfig.storage.secretAccessKey;
-  const forcePathStyle = options?.forcePathStyle !== undefined
-    ? options.forcePathStyle
-    : defaultEnvConfig.storage.forcePathStyle;
+  const forcePathStyle =
+    options?.forcePathStyle !== undefined
+      ? options.forcePathStyle
+      : defaultEnvConfig.storage.forcePathStyle;
 
   if (!bucket) {
     throw new Error('Storage configuration error: "bucket" is required.');

@@ -56,7 +56,11 @@ export interface StorageItem {
 export interface IStorageService {
   ensureBucketExists(): Promise<void>;
   upload(input: UploadInput): Promise<UploadResult>;
-  getUploadPresignedUrl(key: string, contentType: string, expiresInSeconds?: number): Promise<PresignedUploadResponse>;
+  getUploadPresignedUrl(
+    key: string,
+    contentType: string,
+    expiresInSeconds?: number
+  ): Promise<PresignedUploadResponse>;
   getDownloadPresignedUrl(key: string, expiresInSeconds?: number): Promise<string>;
   getObjectStream(key: string, range?: string): Promise<StreamResult>;
   delete(key: string): Promise<void>;

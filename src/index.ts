@@ -17,8 +17,5 @@ export type { S3StorageConfig } from './storage/s3.storage.js';
 export { createStorageClient, StorageFactory } from './storage/storage.factory.js';
 
 // Media Utilities (classification, key generation)
-export {
-  detectCategory,
-  generateStorageKey,
-} from './utils/media-type.util.js';
+export { detectCategory, generateStorageKey } from './utils/media-type.util.js';
 export type { MediaCategory } from './utils/media-type.util.js';

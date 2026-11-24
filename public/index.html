@@ -1,468 +1,453 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Media Storage Service — Files, Images, Videos</title>
-  <style>
-    :root {
-      --bg: #0f172a;
-      --card-bg: #1e293b;
-      --accent: #3b82f6;
-      --accent-hover: #2563eb;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --border: #334155;
-      --success: #10b981;
-      --danger: #ef4444;
-      --img-color: #ec4899;
-      --vid-color: #8b5cf6;
-      --doc-color: #10b981;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Media Storage Service — Files, Images, Videos</title>
+    <style>
+      :root {
+        --bg: #0f172a;
+        --card-bg: #1e293b;
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --text: #f8fafc;
+        --text-muted: #94a3b8;
+        --border: #334155;
+        --success: #10b981;
+        --danger: #ef4444;
+        --img-color: #ec4899;
+        --vid-color: #8b5cf6;
+        --doc-color: #10b981;
+      }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      }
 
-    body {
-      background-color: var(--bg);
-      color: var(--text);
-      padding: 2rem 1rem;
-      min-height: 100vh;
-    }
+      body {
+        background-color: var(--bg);
+        color: var(--text);
+        padding: 2rem 1rem;
+        min-height: 100vh;
+      }
 
-    .container {
-      max-width: 960px;
-      margin: 0 auto;
-    }
+      .container {
+        max-width: 960px;
+        margin: 0 auto;
+      }
 
-    header {
-      margin-bottom: 2rem;
-      text-align: center;
-    }
+      header {
+        margin-bottom: 2rem;
+        text-align: center;
+      }
 
-    header h1 {
-      font-size: 2.2rem;
-      margin-bottom: 0.5rem;
-      background: linear-gradient(135deg, #60a5fa, #a78bfa, #f472b6);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
+      header h1 {
+        font-size: 2.2rem;
+        margin-bottom: 0.5rem;
+        background: linear-gradient(135deg, #60a5fa, #a78bfa, #f472b6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
 
-    header p {
-      color: var(--text-muted);
-      font-size: 0.95rem;
-    }
+      header p {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+      }
 
-    .badge-bar {
-      display: flex;
-      justify-content: center;
-      gap: 0.5rem;
-      margin-top: 0.75rem;
-      flex-wrap: wrap;
-    }
+      .badge-bar {
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+        flex-wrap: wrap;
+      }
 
-    .badge {
-      padding: 0.25rem 0.75rem;
-      border-radius: 9999px;
-      font-size: 0.8rem;
-      font-weight: 600;
-    }
+      .badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.8rem;
+        font-weight: 600;
+      }
 
-    .badge-primary { background: #1e3a8a; color: #93c5fd; }
-    .badge-img { background: #831843; color: #fbcfe8; }
-    .badge-vid { background: #4c1d95; color: #ddd6fe; }
-    .badge-doc { background: #064e3b; color: #a7f3d0; }
+      .badge-primary {
+        background: #1e3a8a;
+        color: #93c5fd;
+      }
+      .badge-img {
+        background: #831843;
+        color: #fbcfe8;
+      }
+      .badge-vid {
+        background: #4c1d95;
+        color: #ddd6fe;
+      }
+      .badge-doc {
+        background: #064e3b;
+        color: #a7f3d0;
+      }
 
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.5rem;
-      margin-bottom: 2rem;
-    }
-
-    @media (max-width: 768px) {
       .grid {
-        grid-template-columns: 1fr;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
       }
-    }
 
-    .card {
-      background-color: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 0.75rem;
-      padding: 1.5rem;
-    }
+      @media (max-width: 768px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
 
-    .card h2 {
-      font-size: 1.25rem;
-      margin-bottom: 0.75rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
+      .card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+      }
 
-    .card p {
-      color: var(--text-muted);
-      font-size: 0.85rem;
-      margin-bottom: 1rem;
-      line-height: 1.4;
-    }
+      .card h2 {
+        font-size: 1.25rem;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
 
-    .file-dropzone {
-      border: 2px dashed var(--border);
-      border-radius: 0.5rem;
-      padding: 1.5rem;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      margin-bottom: 1rem;
-    }
+      .card p {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        margin-bottom: 1rem;
+        line-height: 1.4;
+      }
 
-    .file-dropzone:hover {
-      border-color: var(--accent);
-      background: rgba(59, 130, 246, 0.05);
-    }
+      .file-dropzone {
+        border: 2px dashed var(--border);
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin-bottom: 1rem;
+      }
 
-    input[type="file"] {
-      display: none;
-    }
+      .file-dropzone:hover {
+        border-color: var(--accent);
+        background: rgba(59, 130, 246, 0.05);
+      }
 
-    .selected-file-label {
-      font-size: 0.85rem;
-      color: #38bdf8;
-      word-break: break-all;
-      margin-bottom: 1rem;
-      min-height: 1.2rem;
-    }
+      input[type='file'] {
+        display: none;
+      }
 
-    button {
-      background-color: var(--accent);
-      color: white;
-      border: none;
-      padding: 0.75rem 1.25rem;
-      border-radius: 0.5rem;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      width: 100%;
-      transition: background-color 0.2s ease;
-    }
+      .selected-file-label {
+        font-size: 0.85rem;
+        color: #38bdf8;
+        word-break: break-all;
+        margin-bottom: 1rem;
+        min-height: 1.2rem;
+      }
 
-    button:hover:not(:disabled) {
-      background-color: var(--accent-hover);
-    }
+      button {
+        background-color: var(--accent);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.25rem;
+        border-radius: 0.5rem;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        width: 100%;
+        transition: background-color 0.2s ease;
+      }
 
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
+      button:hover:not(:disabled) {
+        background-color: var(--accent-hover);
+      }
 
-    .progress-bar-container {
-      width: 100%;
-      height: 8px;
-      background: #334155;
-      border-radius: 9999px;
-      overflow: hidden;
-      margin-top: 1rem;
-      display: none;
-    }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
 
-    .progress-bar {
-      width: 0%;
-      height: 100%;
-      background: var(--accent);
-      transition: width 0.15s ease;
-    }
+      .progress-bar-container {
+        width: 100%;
+        height: 8px;
+        background: #334155;
+        border-radius: 9999px;
+        overflow: hidden;
+        margin-top: 1rem;
+        display: none;
+      }
 
-    .status-msg {
-      margin-top: 0.75rem;
-      font-size: 0.85rem;
-      min-height: 1.2rem;
-    }
+      .progress-bar {
+        width: 0%;
+        height: 100%;
+        background: var(--accent);
+        transition: width 0.15s ease;
+      }
 
-    .status-msg.success { color: var(--success); }
-    .status-msg.error { color: var(--danger); }
+      .status-msg {
+        margin-top: 0.75rem;
+        font-size: 0.85rem;
+        min-height: 1.2rem;
+      }
 
-    .preview-box {
-      margin-top: 1.5rem;
-      display: none;
-      background: #000;
-      border-radius: 0.5rem;
-      overflow: hidden;
-      text-align: center;
-      padding: 0.5rem;
-    }
+      .status-msg.success {
+        color: var(--success);
+      }
+      .status-msg.error {
+        color: var(--danger);
+      }
 
-    .preview-box video {
-      width: 100%;
-      max-height: 400px;
-    }
+      .preview-box {
+        margin-top: 1.5rem;
+        display: none;
+        background: #000;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        text-align: center;
+        padding: 0.5rem;
+      }
 
-    .preview-box img {
-      max-width: 100%;
-      max-height: 400px;
-      object-fit: contain;
-    }
+      .preview-box video {
+        width: 100%;
+        max-height: 400px;
+      }
 
-    .filter-bar {
-      display: flex;
-      gap: 0.5rem;
-      margin-top: 1rem;
-      margin-bottom: 1rem;
-      flex-wrap: wrap;
-    }
+      .preview-box img {
+        max-width: 100%;
+        max-height: 400px;
+        object-fit: contain;
+      }
 
-    .filter-btn {
-      width: auto;
-      padding: 0.35rem 0.85rem;
-      font-size: 0.8rem;
-      background: #334155;
-      color: #cbd5e1;
-    }
+      .filter-bar {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+      }
 
-    .filter-btn.active {
-      background: var(--accent);
-      color: white;
-    }
+      .filter-btn {
+        width: auto;
+        padding: 0.35rem 0.85rem;
+        font-size: 0.8rem;
+        background: #334155;
+        color: #cbd5e1;
+      }
 
-    .media-list {
-      list-style: none;
-      margin-top: 0.5rem;
-    }
+      .filter-btn.active {
+        background: var(--accent);
+        color: white;
+      }
 
-    .media-item {
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px solid var(--border);
-      border-radius: 0.5rem;
-      padding: 0.75rem 1rem;
-      margin-bottom: 0.5rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 1rem;
-    }
+      .media-list {
+        list-style: none;
+        margin-top: 0.5rem;
+      }
 
-    .media-info {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-size: 0.9rem;
-    }
+      .media-item {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid var(--border);
+        border-radius: 0.5rem;
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+      }
 
-    .category-tag {
-      font-size: 0.7rem;
-      padding: 0.15rem 0.5rem;
-      border-radius: 4px;
-      font-weight: 700;
-      text-transform: uppercase;
-      margin-right: 0.5rem;
-    }
+      .media-info {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 0.9rem;
+      }
 
-    .tag-images { background: #be185d; color: #fff; }
-    .tag-videos { background: #6d28d9; color: #fff; }
-    .tag-documents { background: #047857; color: #fff; }
-    .tag-files { background: #475569; color: #fff; }
+      .category-tag {
+        font-size: 0.7rem;
+        padding: 0.15rem 0.5rem;
+        border-radius: 4px;
+        font-weight: 700;
+        text-transform: uppercase;
+        margin-right: 0.5rem;
+      }
 
-    .media-actions {
-      display: flex;
-      gap: 0.5rem;
-      flex-shrink: 0;
-    }
+      .tag-images {
+        background: #be185d;
+        color: #fff;
+      }
+      .tag-videos {
+        background: #6d28d9;
+        color: #fff;
+      }
+      .tag-documents {
+        background: #047857;
+        color: #fff;
+      }
+      .tag-files {
+        background: #475569;
+        color: #fff;
+      }
 
-    .btn-sm {
-      padding: 0.35rem 0.75rem;
-      font-size: 0.8rem;
-      width: auto;
-    }
+      .media-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-shrink: 0;
+      }
 
-    .btn-danger { background-color: var(--danger); }
-    .btn-danger:hover:not(:disabled) { background-color: #dc2626; }
-    .btn-secondary { background-color: #475569; }
-    .btn-secondary:hover:not(:disabled) { background-color: #64748b; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <header>
-      <h1>Media Storage Service</h1>
-      <p>Decoupled Object Storage for <strong>Files</strong>, <strong>Images</strong>, &amp; <strong>Videos</strong></p>
-      <div class="badge-bar">
-        <span class="badge badge-primary">S3 Architecture &bull; MinIO @ 127.0.0.1:9000</span>
-        <span class="badge badge-img">Images (JPG, PNG, WebP)</span>
-        <span class="badge badge-vid">Videos (MP4, WebM, MKV)</span>
-        <span class="badge badge-doc">Documents &amp; Files (PDF, ZIP, CSV)</span>
+      .btn-sm {
+        padding: 0.35rem 0.75rem;
+        font-size: 0.8rem;
+        width: auto;
+      }
+
+      .btn-danger {
+        background-color: var(--danger);
+      }
+      .btn-danger:hover:not(:disabled) {
+        background-color: #dc2626;
+      }
+      .btn-secondary {
+        background-color: #475569;
+      }
+      .btn-secondary:hover:not(:disabled) {
+        background-color: #64748b;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Media Storage Service</h1>
+        <p>
+          Decoupled Object Storage for <strong>Files</strong>, <strong>Images</strong>, &amp;
+          <strong>Videos</strong>
+        </p>
+        <div class="badge-bar">
+          <span class="badge badge-primary">S3 Architecture &bull; MinIO @ 127.0.0.1:9000</span>
+          <span class="badge badge-img">Images (JPG, PNG, WebP)</span>
+          <span class="badge badge-vid">Videos (MP4, WebM, MKV)</span>
+          <span class="badge badge-doc">Documents &amp; Files (PDF, ZIP, CSV)</span>
+        </div>
+      </header>
+
+      <div class="grid">
+        <!-- Method 1: Direct Server Upload -->
+        <div class="card">
+          <h2>🚀 Direct Server Upload</h2>
+          <p>
+            Upload files to Node.js, which streams them to object storage using multipart chunking.
+          </p>
+          <div class="file-dropzone" onclick="document.getElementById('directFileInput').click()">
+            <div>Click or drop any file, image, or video here</div>
+            <input type="file" id="directFileInput" onchange="handleFileSelect('direct')" />
+          </div>
+          <div id="directFileLabel" class="selected-file-label"></div>
+          <button id="directUploadBtn" onclick="uploadDirect()" disabled>Upload to Server</button>
+          <div class="progress-bar-container" id="directProgressWrap">
+            <div class="progress-bar" id="directProgressBar"></div>
+          </div>
+          <div id="directStatus" class="status-msg"></div>
+        </div>
+
+        <!-- Method 2: Direct-to-Storage Presigned Upload -->
+        <div class="card">
+          <h2>⚡ Presigned Direct Upload</h2>
+          <p>
+            Node generates a secure signed ticket; browser uploads directly to MinIO/AWS S3 without
+            server bottleneck.
+          </p>
+          <div
+            class="file-dropzone"
+            onclick="document.getElementById('presignedFileInput').click()"
+          >
+            <div>Click or drop any file, image, or video here</div>
+            <input type="file" id="presignedFileInput" onchange="handleFileSelect('presigned')" />
+          </div>
+          <div id="presignedFileLabel" class="selected-file-label"></div>
+          <button id="presignedUploadBtn" onclick="uploadPresigned()" disabled>
+            Upload Direct to Storage
+          </button>
+          <div class="progress-bar-container" id="presignedProgressWrap">
+            <div class="progress-bar" id="presignedProgressBar"></div>
+          </div>
+          <div id="presignedStatus" class="status-msg"></div>
+        </div>
       </div>
-    </header>
 
-    <div class="grid">
-      <!-- Method 1: Direct Server Upload -->
+      <!-- Media Preview Area -->
       <div class="card">
-        <h2>🚀 Direct Server Upload</h2>
-        <p>Upload files to Node.js, which streams them to object storage using multipart chunking.</p>
-        <div class="file-dropzone" onclick="document.getElementById('directFileInput').click()">
-          <div>Click or drop any file, image, or video here</div>
-          <input type="file" id="directFileInput" onchange="handleFileSelect('direct')">
-        </div>
-        <div id="directFileLabel" class="selected-file-label"></div>
-        <button id="directUploadBtn" onclick="uploadDirect()" disabled>Upload to Server</button>
-        <div class="progress-bar-container" id="directProgressWrap">
-          <div class="progress-bar" id="directProgressBar"></div>
-        </div>
-        <div id="directStatus" class="status-msg"></div>
-      </div>
+        <h2>👁️ Media Preview &amp; Stream Test</h2>
+        <p>Test inline images, PDF rendering, or HTTP 206 video seeking directly from storage.</p>
+        <div class="preview-box" id="previewBox"></div>
 
-      <!-- Method 2: Direct-to-Storage Presigned Upload -->
-      <div class="card">
-        <h2>⚡ Presigned Direct Upload</h2>
-        <p>Node generates a secure signed ticket; browser uploads directly to MinIO/AWS S3 without server bottleneck.</p>
-        <div class="file-dropzone" onclick="document.getElementById('presignedFileInput').click()">
-          <div>Click or drop any file, image, or video here</div>
-          <input type="file" id="presignedFileInput" onchange="handleFileSelect('presigned')">
+        <!-- Filter Tabs -->
+        <div class="filter-bar">
+          <button class="filter-btn active" onclick="setCategoryFilter('')">All</button>
+          <button class="filter-btn" onclick="setCategoryFilter('images')">Images</button>
+          <button class="filter-btn" onclick="setCategoryFilter('videos')">Videos</button>
+          <button class="filter-btn" onclick="setCategoryFilter('documents')">Documents</button>
+          <button class="filter-btn" onclick="setCategoryFilter('files')">Files</button>
         </div>
-        <div id="presignedFileLabel" class="selected-file-label"></div>
-        <button id="presignedUploadBtn" onclick="uploadPresigned()" disabled>Upload Direct to Storage</button>
-        <div class="progress-bar-container" id="presignedProgressWrap">
-          <div class="progress-bar" id="presignedProgressBar"></div>
-        </div>
-        <div id="presignedStatus" class="status-msg"></div>
+
+        <ul class="media-list" id="mediaList">
+          <li style="color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0">
+            Loading media items...
+          </li>
+        </ul>
       </div>
     </div>
 
-    <!-- Media Preview Area -->
-    <div class="card">
-      <h2>👁️ Media Preview &amp; Stream Test</h2>
-      <p>Test inline images, PDF rendering, or HTTP 206 video seeking directly from storage.</p>
-      <div class="preview-box" id="previewBox"></div>
+    <script>
+      let directFile = null;
+      let presignedFile = null;
+      let currentFilter = '';
 
-      <!-- Filter Tabs -->
-      <div class="filter-bar">
-        <button class="filter-btn active" onclick="setCategoryFilter('')">All</button>
-        <button class="filter-btn" onclick="setCategoryFilter('images')">Images</button>
-        <button class="filter-btn" onclick="setCategoryFilter('videos')">Videos</button>
-        <button class="filter-btn" onclick="setCategoryFilter('documents')">Documents</button>
-        <button class="filter-btn" onclick="setCategoryFilter('files')">Files</button>
-      </div>
-
-      <ul class="media-list" id="mediaList">
-        <li style="color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0;">Loading media items...</li>
-      </ul>
-    </div>
-  </div>
-
-  <script>
-    let directFile = null;
-    let presignedFile = null;
-    let currentFilter = '';
-
-    function handleFileSelect(type) {
-      if (type === 'direct') {
-        const input = document.getElementById('directFileInput');
-        directFile = input.files[0];
-        document.getElementById('directFileLabel').textContent = directFile
-          ? `${directFile.name} (${(directFile.size / (1024*1024)).toFixed(2)} MB)` : '';
-        document.getElementById('directUploadBtn').disabled = !directFile;
-      } else {
-        const input = document.getElementById('presignedFileInput');
-        presignedFile = input.files[0];
-        document.getElementById('presignedFileLabel').textContent = presignedFile
-          ? `${presignedFile.name} (${(presignedFile.size / (1024*1024)).toFixed(2)} MB)` : '';
-        document.getElementById('presignedUploadBtn').disabled = !presignedFile;
+      function handleFileSelect(type) {
+        if (type === 'direct') {
+          const input = document.getElementById('directFileInput');
+          directFile = input.files[0];
+          document.getElementById('directFileLabel').textContent = directFile
+            ? `${directFile.name} (${(directFile.size / (1024 * 1024)).toFixed(2)} MB)`
+            : '';
+          document.getElementById('directUploadBtn').disabled = !directFile;
+        } else {
+          const input = document.getElementById('presignedFileInput');
+          presignedFile = input.files[0];
+          document.getElementById('presignedFileLabel').textContent = presignedFile
+            ? `${presignedFile.name} (${(presignedFile.size / (1024 * 1024)).toFixed(2)} MB)`
+            : '';
+          document.getElementById('presignedUploadBtn').disabled = !presignedFile;
+        }
       }
-    }
 
-    // Direct Upload
-    async function uploadDirect() {
-      if (!directFile) return;
+      // Direct Upload
+      async function uploadDirect() {
+        if (!directFile) return;
 
-      const btn = document.getElementById('directUploadBtn');
-      const status = document.getElementById('directStatus');
-      const progressWrap = document.getElementById('directProgressWrap');
-      const progressBar = document.getElementById('directProgressBar');
+        const btn = document.getElementById('directUploadBtn');
+        const status = document.getElementById('directStatus');
+        const progressWrap = document.getElementById('directProgressWrap');
+        const progressBar = document.getElementById('directProgressBar');
 
-      btn.disabled = true;
-      progressWrap.style.display = 'block';
-      progressBar.style.width = '0%';
-      status.className = 'status-msg';
-      status.textContent = 'Uploading to server...';
+        btn.disabled = true;
+        progressWrap.style.display = 'block';
+        progressBar.style.width = '0%';
+        status.className = 'status-msg';
+        status.textContent = 'Uploading to server...';
 
-      const formData = new FormData();
-      formData.append('file', directFile);
-
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', '/api/media/upload');
-
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) {
-          const percent = Math.round((e.loaded / e.total) * 100);
-          progressBar.style.width = percent + '%';
-        }
-      };
-
-      xhr.onload = () => {
-        btn.disabled = false;
-        try {
-          const res = JSON.parse(xhr.responseText);
-          if (xhr.status >= 200 && xhr.status < 300) {
-            status.className = 'status-msg success';
-            status.textContent = 'Upload successful!';
-            loadMediaList();
-            previewMedia(res.data.key, res.data.contentType);
-          } else {
-            status.className = 'status-msg error';
-            status.textContent = res.message || 'Upload failed';
-          }
-        } catch {
-          status.className = 'status-msg error';
-          status.textContent = 'Error parsing server response';
-        }
-      };
-
-      xhr.onerror = () => {
-        btn.disabled = false;
-        status.className = 'status-msg error';
-        status.textContent = 'Network error during upload';
-      };
-
-      xhr.send(formData);
-    }
-
-    // Presigned Upload
-    async function uploadPresigned() {
-      if (!presignedFile) return;
-
-      const btn = document.getElementById('presignedUploadBtn');
-      const status = document.getElementById('presignedStatus');
-      const progressWrap = document.getElementById('presignedProgressWrap');
-      const progressBar = document.getElementById('presignedProgressBar');
-
-      btn.disabled = true;
-      progressWrap.style.display = 'block';
-      progressBar.style.width = '0%';
-      status.className = 'status-msg';
-      status.textContent = 'Requesting presigned upload ticket...';
-
-      try {
-        const ticketRes = await fetch('/api/media/presigned-upload-url', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            fileName: presignedFile.name,
-            contentType: presignedFile.type || 'application/octet-stream',
-          }),
-        });
-
-        const ticketData = await ticketRes.json();
-        if (!ticketRes.ok) throw new Error(ticketData.message || 'Failed to get ticket');
-
-        status.textContent = 'Uploading directly to object storage...';
+        const formData = new FormData();
+        formData.append('file', directFile);
 
         const xhr = new XMLHttpRequest();
-        xhr.open('PUT', ticketData.data.uploadUrl);
-        xhr.setRequestHeader('Content-Type', ticketData.data.contentType);
+        xhr.open('POST', '/api/media/upload');
 
         xhr.upload.onprogress = (e) => {
           if (e.lengthComputable) {
@@ -473,84 +458,155 @@
 
         xhr.onload = () => {
           btn.disabled = false;
-          if (xhr.status >= 200 && xhr.status < 300) {
-            status.className = 'status-msg success';
-            status.textContent = 'Direct storage upload complete!';
-            loadMediaList();
-            previewMedia(ticketData.data.key, ticketData.data.contentType);
-          } else {
+          try {
+            const res = JSON.parse(xhr.responseText);
+            if (xhr.status >= 200 && xhr.status < 300) {
+              status.className = 'status-msg success';
+              status.textContent = 'Upload successful!';
+              loadMediaList();
+              previewMedia(res.data.key, res.data.contentType);
+            } else {
+              status.className = 'status-msg error';
+              status.textContent = res.message || 'Upload failed';
+            }
+          } catch {
             status.className = 'status-msg error';
-            status.textContent = `Storage error: ${xhr.status}`;
+            status.textContent = 'Error parsing server response';
           }
         };
 
         xhr.onerror = () => {
           btn.disabled = false;
           status.className = 'status-msg error';
-          status.textContent = 'Network error during direct storage upload';
+          status.textContent = 'Network error during upload';
         };
 
-        xhr.send(presignedFile);
-      } catch (err) {
-        btn.disabled = false;
-        status.className = 'status-msg error';
-        status.textContent = err.message;
+        xhr.send(formData);
       }
-    }
 
-    // Preview media inline
-    function previewMedia(key, contentType) {
-      const box = document.getElementById('previewBox');
-      box.style.display = 'block';
-      const url = `/api/media/${encodeURIComponent(key)}/view`;
+      // Presigned Upload
+      async function uploadPresigned() {
+        if (!presignedFile) return;
 
-      if (key.startsWith('images/') || (contentType && contentType.startsWith('image/'))) {
-        box.innerHTML = `<img src="${url}" alt="Preview" />`;
-      } else if (key.startsWith('videos/') || (contentType && contentType.startsWith('video/'))) {
-        box.innerHTML = `<video src="${url}" controls autoplay></video>`;
-      } else if (key.startsWith('audio/') || (contentType && contentType.startsWith('audio/'))) {
-        box.innerHTML = `<audio src="${url}" controls autoplay style="width: 100%;"></audio>`;
-      } else {
-        box.innerHTML = `
+        const btn = document.getElementById('presignedUploadBtn');
+        const status = document.getElementById('presignedStatus');
+        const progressWrap = document.getElementById('presignedProgressWrap');
+        const progressBar = document.getElementById('presignedProgressBar');
+
+        btn.disabled = true;
+        progressWrap.style.display = 'block';
+        progressBar.style.width = '0%';
+        status.className = 'status-msg';
+        status.textContent = 'Requesting presigned upload ticket...';
+
+        try {
+          const ticketRes = await fetch('/api/media/presigned-upload-url', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              fileName: presignedFile.name,
+              contentType: presignedFile.type || 'application/octet-stream',
+            }),
+          });
+
+          const ticketData = await ticketRes.json();
+          if (!ticketRes.ok) throw new Error(ticketData.message || 'Failed to get ticket');
+
+          status.textContent = 'Uploading directly to object storage...';
+
+          const xhr = new XMLHttpRequest();
+          xhr.open('PUT', ticketData.data.uploadUrl);
+          xhr.setRequestHeader('Content-Type', ticketData.data.contentType);
+
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+              const percent = Math.round((e.loaded / e.total) * 100);
+              progressBar.style.width = percent + '%';
+            }
+          };
+
+          xhr.onload = () => {
+            btn.disabled = false;
+            if (xhr.status >= 200 && xhr.status < 300) {
+              status.className = 'status-msg success';
+              status.textContent = 'Direct storage upload complete!';
+              loadMediaList();
+              previewMedia(ticketData.data.key, ticketData.data.contentType);
+            } else {
+              status.className = 'status-msg error';
+              status.textContent = `Storage error: ${xhr.status}`;
+            }
+          };
+
+          xhr.onerror = () => {
+            btn.disabled = false;
+            status.className = 'status-msg error';
+            status.textContent = 'Network error during direct storage upload';
+          };
+
+          xhr.send(presignedFile);
+        } catch (err) {
+          btn.disabled = false;
+          status.className = 'status-msg error';
+          status.textContent = err.message;
+        }
+      }
+
+      // Preview media inline
+      function previewMedia(key, contentType) {
+        const box = document.getElementById('previewBox');
+        box.style.display = 'block';
+        const url = `/api/media/${encodeURIComponent(key)}/view`;
+
+        if (key.startsWith('images/') || (contentType && contentType.startsWith('image/'))) {
+          box.innerHTML = `<img src="${url}" alt="Preview" />`;
+        } else if (key.startsWith('videos/') || (contentType && contentType.startsWith('video/'))) {
+          box.innerHTML = `<video src="${url}" controls autoplay></video>`;
+        } else if (key.startsWith('audio/') || (contentType && contentType.startsWith('audio/'))) {
+          box.innerHTML = `<audio src="${url}" controls autoplay style="width: 100%;"></audio>`;
+        } else {
+          box.innerHTML = `
           <div style="padding: 1rem; color: var(--text-muted);">
             <div>File: <strong>${escapeHtml(key)}</strong></div>
             <a href="/api/media/${encodeURIComponent(key)}/download" class="btn-sm" style="display:inline-block; margin-top:0.75rem; text-decoration:none; background:var(--accent); color:white; border-radius:4px;">Download File</a>
           </div>
         `;
-      }
-    }
-
-    function setCategoryFilter(cat) {
-      currentFilter = cat;
-      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-      event.target.classList.add('active');
-      loadMediaList();
-    }
-
-    // Load media list
-    async function loadMediaList() {
-      const listEl = document.getElementById('mediaList');
-      try {
-        const query = currentFilter ? `?category=${encodeURIComponent(currentFilter)}` : '';
-        const res = await fetch(`/api/media${query}`);
-        const data = await res.json();
-
-        if (!data.success || !data.data.length) {
-          listEl.innerHTML = '<li style="color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0;">No items found.</li>';
-          return;
         }
+      }
 
-        listEl.innerHTML = data.data.map(item => {
-          const categoryClass = `tag-${item.category}`;
-          const cleanName = item.key.split('/').slice(1).join('/');
+      function setCategoryFilter(cat) {
+        currentFilter = cat;
+        document.querySelectorAll('.filter-btn').forEach((btn) => btn.classList.remove('active'));
+        event.target.classList.add('active');
+        loadMediaList();
+      }
 
-          return `
+      // Load media list
+      async function loadMediaList() {
+        const listEl = document.getElementById('mediaList');
+        try {
+          const query = currentFilter ? `?category=${encodeURIComponent(currentFilter)}` : '';
+          const res = await fetch(`/api/media${query}`);
+          const data = await res.json();
+
+          if (!data.success || !data.data.length) {
+            listEl.innerHTML =
+              '<li style="color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0;">No items found.</li>';
+            return;
+          }
+
+          listEl.innerHTML = data.data
+            .map((item) => {
+              const categoryClass = `tag-${item.category}`;
+              const cleanName = item.key.split('/').slice(1).join('/');
+
+              return `
             <li class="media-item">
               <div class="media-info">
                 <span class="category-tag ${categoryClass}">${item.category}</span>
                 <strong>${escapeHtml(cleanName)}</strong>
                 <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">
-                  ${item.size ? (item.size / (1024*1024)).toFixed(2) + ' MB' : 'Unknown size'} &bull; ${new Date(item.lastModified).toLocaleString()}
+                  ${item.size ? (item.size / (1024 * 1024)).toFixed(2) + ' MB' : 'Unknown size'} &bull; ${new Date(item.lastModified).toLocaleString()}
                 </div>
               </div>
               <div class="media-actions">
@@ -560,27 +616,33 @@
               </div>
             </li>
           `;
-        }).join('');
-      } catch {
-        listEl.innerHTML = '<li style="color: var(--danger); font-size: 0.85rem;">Failed to load items.</li>';
+            })
+            .join('');
+        } catch {
+          listEl.innerHTML =
+            '<li style="color: var(--danger); font-size: 0.85rem;">Failed to load items.</li>';
+        }
       }
-    }
 
-    async function deleteMedia(key) {
-      if (!confirm(`Are you sure you want to delete ${key}?`)) return;
-      try {
-        await fetch(`/api/media/${encodeURIComponent(key)}`, { method: 'DELETE' });
-        loadMediaList();
-      } catch {
-        alert('Failed to delete item');
+      async function deleteMedia(key) {
+        if (!confirm(`Are you sure you want to delete ${key}?`)) return;
+        try {
+          await fetch(`/api/media/${encodeURIComponent(key)}`, { method: 'DELETE' });
+          loadMediaList();
+        } catch {
+          alert('Failed to delete item');
+        }
       }
-    }
 
-    function escapeHtml(str) {
-      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    }
+      function escapeHtml(str) {
+        return str
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
 
-    loadMediaList();
-  </script>
-</body>
+      loadMediaList();
+    </script>
+  </body>
 </html>

@@ -126,11 +126,7 @@ export class VideoController {
    * 3. Stream Video via HTTP 206 Partial Content
    * Enables seeking, skipping forward/backward in HTML5 video players.
    */
-  public static async streamVideo(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
+  public static async streamVideo(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const key = VideoController.getParamKey(req);
       const range = req.headers.range;
@@ -154,8 +150,9 @@ export class VideoController {
       }
 
       stream.pipe(res);
-    } catch (error: any) {
-      if (error.name === 'NoSuchKey' || error.$metadata?.httpStatusCode === 404) {
+    } catch (error: unknown) {
+      const err = error as { name?: string; $metadata?: { httpStatusCode?: number } };
+      if (err.name === 'NoSuchKey' || err.$metadata?.httpStatusCode === 404) {
         res.status(404).json({ success: false, message: 'Video not found' });
         return;
       }
@@ -192,11 +189,7 @@ export class VideoController {
   /**
    * 5. List Videos
    */
-  public static async listVideos(
-    _req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
+  public static async listVideos(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const items = await VideoController.storageService.list('videos/');
 
@@ -219,11 +212,7 @@ export class VideoController {
   /**
    * 6. Delete Video
    */
-  public static async deleteVideo(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
+  public static async deleteVideo(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const key = VideoController.getParamKey(req);
       await VideoController.storageService.delete(key);

@@ -46,7 +46,8 @@ export function generateStorageKey(
 ): { key: string; category: MediaCategory; contentType: string } {
   const ext = path.extname(originalName);
   const base = path.basename(originalName, ext).replace(/[^a-zA-Z0-9_-]/g, '_');
-  const contentType = mimeType || (mime.lookup(originalName) as string) || 'application/octet-stream';
+  const contentType =
+    mimeType || (mime.lookup(originalName) as string) || 'application/octet-stream';
   const category = preferredCategory || detectCategory(contentType, originalName);
 
   const key = `${category}/${Date.now()}-${uuidv4().substring(0, 8)}-${base}${ext}`;

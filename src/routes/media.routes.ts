@@ -5,11 +5,7 @@ import { mediaUploadMiddleware } from '../middlewares/upload.middleware.js';
 const router = Router();
 
 // Upload any file directly to server (single field named 'file' or 'media')
-router.post(
-  '/upload',
-  mediaUploadMiddleware.single('file'),
-  MediaController.uploadDirect
-);
+router.post('/upload', mediaUploadMiddleware.single('file'), MediaController.uploadDirect);
 
 // Request a pre-signed URL to upload directly to MinIO/S3
 router.post('/presigned-upload-url', MediaController.getPresignedUploadUrl);

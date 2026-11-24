@@ -66,9 +66,11 @@ export function createMediaRouter(options?: CreateMediaRouterOptions): Router {
 
   const storageService = options?.storageService || createStorageClient(options?.storageConfig);
   const controller = new MediaController(storageService);
-  const uploader = options?.uploadMiddleware || (options?.maxFileSize
-    ? createMediaUploadMiddleware({ maxFileSize: options.maxFileSize })
-    : mediaUploadMiddleware);
+  const uploader =
+    options?.uploadMiddleware ||
+    (options?.maxFileSize
+      ? createMediaUploadMiddleware({ maxFileSize: options.maxFileSize })
+      : mediaUploadMiddleware);
 
   // Upload single file
   router.post('/upload', uploader.single('file'), controller.uploadDirect);

@@ -23,8 +23,12 @@ async function bootstrap() {
     const server = app.listen(config.port, () => {
       console.log(`[Server] Media Storage Service running at http://localhost:${config.port}`);
       console.log(`[Server] Web Test Console: http://localhost:${config.port}`);
-      console.log(`[Server] Direct Upload API: POST http://localhost:${config.port}/api/media/upload`);
-      console.log(`[Server] Presigned Upload API: POST http://localhost:${config.port}/api/media/presigned-upload-url`);
+      console.log(
+        `[Server] Direct Upload API: POST http://localhost:${config.port}/api/media/upload`
+      );
+      console.log(
+        `[Server] Presigned Upload API: POST http://localhost:${config.port}/api/media/presigned-upload-url`
+      );
       console.log('====================================================');
     });
 

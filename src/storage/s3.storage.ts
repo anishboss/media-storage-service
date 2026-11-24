@@ -60,13 +60,18 @@ export class S3StorageService implements IStorageService {
   async ensureBucketExists(): Promise<void> {
     try {
       await this.client.send(new HeadBucketCommand({ Bucket: this.bucket }));
-    } catch (error: any) {
-      if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
+    } catch (error: unknown) {
+      const err = error as {
+        name?: string;
+        $metadata?: { httpStatusCode?: number };
+        message?: string;
+      };
+      if (err.name === 'NotFound' || err.$metadata?.httpStatusCode === 404) {
         console.log(`Bucket "${this.bucket}" does not exist. Creating bucket...`);
         await this.client.send(new CreateBucketCommand({ Bucket: this.bucket }));
         console.log(`Bucket "${this.bucket}" created successfully.`);
       } else {
-        console.warn(`Warning when checking bucket "${this.bucket}":`, error.message);
+        console.warn(`Warning when checking bucket "${this.bucket}":`, err.message);
       }
     }
   }
@@ -132,10 +137,7 @@ export class S3StorageService implements IStorageService {
   /**
    * Generates a pre-signed GET URL for secure video playback/download.
    */
-  async getDownloadPresignedUrl(
-    key: string,
-    expiresInSeconds: number = 3600
-  ): Promise<string> {
+  async getDownloadPresignedUrl(key: string, expiresInSeconds: number = 3600): Promise<string> {
     const command = new GetObjectCommand({
       Bucket: this.bucket,
       Key: key,
