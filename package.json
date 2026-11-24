@@ -1,6 +1,6 @@
 {
   "name": "@dianomax/media-storage-service",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Unified object storage library for files, images, and videos with MinIO and AWS S3 zero-code interoperability",
   "type": "module",
   "main": "./dist/index.js",
