@@ -150,3 +150,9 @@ For complete IAM and bucket setup instructions, read [features/05-aws-s3-product
 | ----------------- | ---------- | ------------------- | -------------------------------------------------------------------- |
 | **`development`** | Staging    | Stage / Pre-release | Validates all PRs & pushes; builds staging packages.                 |
 | **`main`**        | Production | Stable Production   | Tested releases merged via PR; tags (`v*`) publish to NPM `@latest`. |
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please read our [**Contributing Guide (CONTRIBUTING.md)**](./CONTRIBUTING.md) for details on code style, branch guidelines, local MinIO testing, and pull request procedures.
