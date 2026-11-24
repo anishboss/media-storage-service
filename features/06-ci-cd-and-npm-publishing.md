@@ -1,47 +1,66 @@
-# Feature 06: CI/CD Workflows & Automated NPM Version Deployment
+# Feature 06: Two-Branch Strategy (Main/Prod & Development/Stage) & CI/CD Workflows
 
 ## Overview
 
-This project uses **GitHub Actions** for automated continuous integration, matrix testing, and automated package version deployment to the NPM Registry with provenance.
+This repository uses a structured two-branch Git workflow paired with GitHub Actions:
+
+```
+                  ┌──────────────────────────────────────────────┐
+                  │           development branch                 │
+Feature Branches ─►           (Stage Environment)                │
+                  └──────────────────────┬───────────────────────┘
+                                         │ Tested & Verified
+                                         ▼ Pull Request
+                  ┌──────────────────────────────────────────────┐
+                  │              main branch                     │
+                  │        (Production Environment)              │
+                  └──────────────────────┬───────────────────────┘
+                                         │ Release / Tag (v*.*.*)
+                                         ▼
+                               [ NPM Production Release ]
+```
 
 ---
 
-## 1. CI Workflow (`.github/workflows/ci.yml`)
+## 1. Branch Strategy
 
-- **Triggers**:
-  - Every `push` to the `main` branch.
-  - Every `pull_request` targeting `main`.
-- **Testing Matrix**:
-  - Runs concurrently on Node.js **18.x**, **20.x**, and **22.x**.
-- **Steps**:
-  1. `npm ci` (clean dependency installation from lockfile)
-  2. `npm run format:check` (validates code style with Prettier)
-  3. `npm run lint` (runs ESLint with TypeScript rules)
-  4. `npm run build` (verifies TypeScript compilation and `.d.ts` generation)
+| Branch            | Environment    | Purpose                                                                   | CI/CD Action                                                                                       |
+| ----------------- | -------------- | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| **`development`** | **Stage**      | Active integration, staging tests, beta features.                         | Runs matrix CI; optionally deploys staging / beta package under `@beta` tag.                       |
+| **`main`**        | **Production** | Stable releases. Only merged from `development` via tested Pull Requests. | Runs matrix CI; publishes production package under `@latest` tag when a tag or release is created. |
 
 ---
 
-## 2. Automated Publishing Workflow (`.github/workflows/publish.yml`)
+## 2. GitHub Actions Workflows
+
+### A. CI Workflow (`.github/workflows/ci.yml`)
 
 - **Triggers**:
-  - **Git Version Tag**: Pushing any tag matching `v*` (e.g. `v1.0.1`).
-  - **GitHub Release**: Publishing a release in GitHub.
-  - **Manual Trigger**: Via the **Actions** tab in GitHub (`workflow_dispatch`).
-- **Publishing Steps**:
-  1. Validates linting and formatting.
-  2. Builds the TypeScript library and type declarations.
-  3. Publishes to NPM using `--access public` and `--provenance`.
+  - Every `push` to `main` OR `development`.
+  - Every `pull_request` targeting `main` OR `development`.
+- **Testing Matrix**: Node.js **18.x**, **20.x**, and **22.x**.
+- **Steps**: Format check (`npm run format:check`), ESLint (`npm run lint`), TypeScript build (`npm run build`).
+
+### B. Stage Deployment (`.github/workflows/stage-deploy.yml`)
+
+- **Triggers**: Every `push` to `development`.
+- **Steps**: Builds and verifies staging readiness. Supports manual dispatch to publish a pre-release (`--tag beta`) if desired.
+
+### C. Production Deployment (`.github/workflows/publish-production.yml`)
+
+- **Triggers**:
+  - Pushing a version tag (`v1.0.1`, `v1.1.0`, etc.) to `main`.
+  - Publishing a release in GitHub.
+  - Manual dispatch with custom NPM tag.
+- **Steps**: Verifies code quality, compiles production `.d.ts` bundles, and publishes to NPM with `--access public --provenance`.
 
 ---
 
 ## 3. Setup: Adding your NPM Token to GitHub
 
-To allow GitHub Actions to publish your package to NPM:
-
 1. Log in to [npmjs.com](https://www.npmjs.com).
-2. Go to **Access Tokens** ➔ **Generate New Token** ➔ Select **Automation** (or Granular Access Token with Read and Write permissions for packages).
-3. Copy the token.
-4. In your GitHub repository:
+2. Go to **Access Tokens** ➔ **Generate New Token** ➔ Select **Automation**.
+3. In your GitHub repository:
    - Go to **Settings** ➔ **Secrets and variables** ➔ **Actions**.
    - Click **New repository secret**.
    - Name: `NPM_TOKEN`
@@ -49,31 +68,20 @@ To allow GitHub Actions to publish your package to NPM:
 
 ---
 
-## 4. How to Deploy a New Version
+## 4. How to Deploy a Production Release
 
-You can trigger a deployment directly from your terminal using the helper scripts:
+When features in `development` are ready for production:
 
-### Patch Release (Bug fixes: 1.0.0 ➔ 1.0.1)
+1. Create a Pull Request from `development` into `main`.
+2. Once merged into `main`, checkout `main` and run:
+   ```bash
+   # Bug fix (e.g. 1.0.0 -> 1.0.1)
+   npm run release:patch
 
-```bash
-npm run release:patch
-```
+   # New backward-compatible feature (e.g. 1.0.0 -> 1.1.0)
+   npm run release:minor
 
-### Minor Release (New features: 1.0.0 ➔ 1.1.0)
-
-```bash
-npm run release:minor
-```
-
-### Major Release (Breaking changes: 1.0.0 ➔ 2.0.0)
-
-```bash
-npm run release:major
-```
-
-Each script will automatically:
-
-1. Bump the version in `package.json` and `package-lock.json`.
-2. Create a git commit and a version tag (e.g. `v1.0.1`).
-3. Push the commit and tag to GitHub (`git push --follow-tags`).
-4. GitHub Actions triggers `.github/workflows/publish.yml` and publishes to NPM!
+   # Breaking change (e.g. 1.0.0 -> 2.0.0)
+   npm run release:major
+   ```
+3. The script automatically tags the commit and pushes to GitHub, triggering `publish-production.yml` to deploy to NPM!

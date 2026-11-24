@@ -1,4 +1,4 @@
-name: Publish Package to NPM
+name: Production Deployment (main)
 
 on:
   release:
@@ -9,23 +9,23 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'NPM distribution tag (e.g. latest, beta)'
+        description: 'NPM distribution tag (default: latest)'
         required: true
         default: 'latest'
 
 jobs:
-  publish:
-    name: Build & Publish to NPM
+  production:
+    name: Build & Publish to Production
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write # Required for NPM provenance authentication
+      id-token: write
 
     steps:
-      - name: Checkout code
+      - name: Checkout main branch
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js (20.x)
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
@@ -43,7 +43,7 @@ jobs:
       - name: Build TypeScript library & declaration maps
         run: npm run build
 
-      - name: Publish to NPM
+      - name: Publish to NPM (Production)
         run: npm publish --access public --tag ${{ github.event.inputs.tag || 'latest' }} --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
