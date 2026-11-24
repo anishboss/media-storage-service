@@ -410,20 +410,65 @@
       let presignedFile = null;
       let currentFilter = '';
 
+      function resetUploadForm(type) {
+        if (type === 'direct') {
+          directFile = null;
+          const input = document.getElementById('directFileInput');
+          if (input) input.value = '';
+          const label = document.getElementById('directFileLabel');
+          if (label) label.textContent = '';
+          const btn = document.getElementById('directUploadBtn');
+          if (btn) btn.disabled = true;
+          setTimeout(() => {
+            const progressWrap = document.getElementById('directProgressWrap');
+            if (progressWrap) progressWrap.style.display = 'none';
+          }, 3000);
+        } else {
+          presignedFile = null;
+          const input = document.getElementById('presignedFileInput');
+          if (input) input.value = '';
+          const label = document.getElementById('presignedFileLabel');
+          if (label) label.textContent = '';
+          const btn = document.getElementById('presignedUploadBtn');
+          if (btn) btn.disabled = true;
+          setTimeout(() => {
+            const progressWrap = document.getElementById('presignedProgressWrap');
+            if (progressWrap) progressWrap.style.display = 'none';
+          }, 3000);
+        }
+      }
+
+      function clearSelection(type) {
+        resetUploadForm(type);
+        const status = document.getElementById(
+          type === 'direct' ? 'directStatus' : 'presignedStatus'
+        );
+        if (status) {
+          status.className = 'status-msg';
+          status.textContent = '';
+        }
+      }
+
       function handleFileSelect(type) {
         if (type === 'direct') {
           const input = document.getElementById('directFileInput');
           directFile = input.files[0];
-          document.getElementById('directFileLabel').textContent = directFile
-            ? `${directFile.name} (${(directFile.size / (1024 * 1024)).toFixed(2)} MB)`
-            : '';
+          const label = document.getElementById('directFileLabel');
+          if (directFile) {
+            label.innerHTML = `${escapeHtml(directFile.name)} (${(directFile.size / (1024 * 1024)).toFixed(2)} MB) <span style="cursor:pointer; color:#ef4444; margin-left:8px;" onclick="clearSelection('direct')">✕ Remove</span>`;
+          } else {
+            label.textContent = '';
+          }
           document.getElementById('directUploadBtn').disabled = !directFile;
         } else {
           const input = document.getElementById('presignedFileInput');
           presignedFile = input.files[0];
-          document.getElementById('presignedFileLabel').textContent = presignedFile
-            ? `${presignedFile.name} (${(presignedFile.size / (1024 * 1024)).toFixed(2)} MB)`
-            : '';
+          const label = document.getElementById('presignedFileLabel');
+          if (presignedFile) {
+            label.innerHTML = `${escapeHtml(presignedFile.name)} (${(presignedFile.size / (1024 * 1024)).toFixed(2)} MB) <span style="cursor:pointer; color:#ef4444; margin-left:8px;" onclick="clearSelection('presigned')">✕ Remove</span>`;
+          } else {
+            label.textContent = '';
+          }
           document.getElementById('presignedUploadBtn').disabled = !presignedFile;
         }
       }
@@ -457,19 +502,21 @@
         };
 
         xhr.onload = () => {
-          btn.disabled = false;
           try {
             const res = JSON.parse(xhr.responseText);
             if (xhr.status >= 200 && xhr.status < 300) {
               status.className = 'status-msg success';
               status.textContent = 'Upload successful!';
+              resetUploadForm('direct');
               loadMediaList();
               previewMedia(res.data.key, res.data.contentType);
             } else {
+              btn.disabled = false;
               status.className = 'status-msg error';
               status.textContent = res.message || 'Upload failed';
             }
           } catch {
+            btn.disabled = false;
             status.className = 'status-msg error';
             status.textContent = 'Error parsing server response';
           }
@@ -488,6 +535,7 @@
       async function uploadPresigned() {
         if (!presignedFile) return;
 
+        const fileToUpload = presignedFile;
         const btn = document.getElementById('presignedUploadBtn');
         const status = document.getElementById('presignedStatus');
         const progressWrap = document.getElementById('presignedProgressWrap');
@@ -504,8 +552,8 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              fileName: presignedFile.name,
-              contentType: presignedFile.type || 'application/octet-stream',
+              fileName: fileToUpload.name,
+              contentType: fileToUpload.type || 'application/octet-stream',
             }),
           });
 
@@ -526,13 +574,14 @@
           };
 
           xhr.onload = () => {
-            btn.disabled = false;
             if (xhr.status >= 200 && xhr.status < 300) {
               status.className = 'status-msg success';
               status.textContent = 'Direct storage upload complete!';
+              resetUploadForm('presigned');
               loadMediaList();
               previewMedia(ticketData.data.key, ticketData.data.contentType);
             } else {
+              btn.disabled = false;
               status.className = 'status-msg error';
               status.textContent = `Storage error: ${xhr.status}`;
             }
@@ -544,7 +593,7 @@
             status.textContent = 'Network error during direct storage upload';
           };
 
-          xhr.send(presignedFile);
+          xhr.send(fileToUpload);
         } catch (err) {
           btn.disabled = false;
           status.className = 'status-msg error';
