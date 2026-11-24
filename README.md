@@ -141,3 +141,12 @@ STORAGE_FORCE_PATH_STYLE=false
 ```
 
 For complete IAM and bucket setup instructions, read [features/05-aws-s3-production-migration-guide.md](./features/05-aws-s3-production-migration-guide.md).
+
+---
+
+## 🌿 Git Branching Strategy
+
+| Branch            | Role       | Environment         | Trigger / Action                                                     |
+| ----------------- | ---------- | ------------------- | -------------------------------------------------------------------- |
+| **`development`** | Staging    | Stage / Pre-release | Validates all PRs & pushes; builds staging packages.                 |
+| **`main`**        | Production | Stable Production   | Tested releases merged via PR; tags (`v*`) publish to NPM `@latest`. |
