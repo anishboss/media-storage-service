@@ -37,6 +37,7 @@ export function detectCategory(mimeType?: string, fileName?: string): MediaCateg
 
 /**
  * Generates a clean, timestamped, collision-free storage key organized by category.
+ * Automatically infers missing file extensions for extensionless uploads (e.g. blobs, mobile uploads).
  * Example: images/1795507085667-b0f9c686-profile_photo.png
  */
 export function generateStorageKey(
@@ -44,12 +45,22 @@ export function generateStorageKey(
   mimeType?: string,
   preferredCategory?: MediaCategory
 ): { key: string; category: MediaCategory; contentType: string } {
-  const ext = path.extname(originalName);
-  const base = path.basename(originalName, ext).replace(/[^a-zA-Z0-9_-]/g, '_');
+  let ext = path.extname(originalName);
+  const rawBase = path.basename(originalName, ext).replace(/[^a-zA-Z0-9_-]/g, '_');
+  const base = rawBase || 'file';
   const contentType =
     mimeType || (mime.lookup(originalName) as string) || 'application/octet-stream';
-  const category = preferredCategory || detectCategory(contentType, originalName);
 
+  // If originalName had no file extension (e.g. "blob", "screenshot", "video_recording"),
+  // automatically infer the correct extension from the resolved contentType
+  if (!ext && contentType) {
+    const inferredExt = mime.extension(contentType);
+    if (inferredExt) {
+      ext = `.${inferredExt}`;
+    }
+  }
+
+  const category = preferredCategory || detectCategory(contentType, originalName);
   const key = `${category}/${Date.now()}-${uuidv4().substring(0, 8)}-${base}${ext}`;
 
   return { key, category, contentType };

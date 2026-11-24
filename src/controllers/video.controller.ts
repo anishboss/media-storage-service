@@ -134,20 +134,26 @@ export class VideoController {
       const { stream, contentLength, contentType, contentRange, acceptRanges } =
         await VideoController.storageService.getObjectStream(key, range);
 
-      if (range && contentRange) {
-        res.writeHead(206, {
-          'Content-Range': contentRange,
-          'Accept-Ranges': acceptRanges || 'bytes',
-          'Content-Length': contentLength,
-          'Content-Type': contentType || 'video/mp4',
-        });
-      } else {
-        res.writeHead(200, {
-          'Content-Length': contentLength,
-          'Content-Type': contentType || 'video/mp4',
-          'Accept-Ranges': 'bytes',
-        });
+      const headers: Record<string, string | number> = {
+        'Content-Type': contentType || 'video/mp4',
+        'Accept-Ranges': acceptRanges || 'bytes',
+      };
+
+      if (contentLength !== undefined) {
+        headers['Content-Length'] = contentLength;
       }
+
+      if (range && contentRange) {
+        headers['Content-Range'] = contentRange;
+        res.writeHead(206, headers);
+      } else {
+        res.writeHead(200, headers);
+      }
+
+      // Prevent memory / socket leak on aborted client requests (e.g. video seeking, tab close)
+      res.on('close', () => {
+        stream.destroy();
+      });
 
       stream.pipe(res);
     } catch (error: unknown) {

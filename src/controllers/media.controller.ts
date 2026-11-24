@@ -144,22 +144,27 @@ export class MediaController {
 
       const resolvedContentType = contentType || 'application/octet-stream';
 
-      if (range && contentRange) {
-        res.writeHead(206, {
-          'Content-Range': contentRange,
-          'Accept-Ranges': acceptRanges || 'bytes',
-          'Content-Length': contentLength,
-          'Content-Type': resolvedContentType,
-          'Content-Disposition': 'inline',
-        });
-      } else {
-        res.writeHead(200, {
-          'Content-Length': contentLength,
-          'Content-Type': resolvedContentType,
-          'Accept-Ranges': 'bytes',
-          'Content-Disposition': 'inline',
-        });
+      const headers: Record<string, string | number> = {
+        'Content-Type': resolvedContentType,
+        'Accept-Ranges': acceptRanges || 'bytes',
+        'Content-Disposition': 'inline',
+      };
+
+      if (contentLength !== undefined) {
+        headers['Content-Length'] = contentLength;
       }
+
+      if (range && contentRange) {
+        headers['Content-Range'] = contentRange;
+        res.writeHead(206, headers);
+      } else {
+        res.writeHead(200, headers);
+      }
+
+      // Prevent memory / socket leak on aborted client requests (e.g. video seeking, tab close)
+      res.on('close', () => {
+        stream.destroy();
+      });
 
       stream.pipe(res);
     } catch (error: unknown) {
@@ -182,10 +187,20 @@ export class MediaController {
 
       const { stream, contentLength, contentType } = await this.service.getObjectStream(key);
 
-      res.writeHead(200, {
-        'Content-Length': contentLength,
+      const headers: Record<string, string | number> = {
         'Content-Type': contentType || 'application/octet-stream',
         'Content-Disposition': `attachment; filename="${fileName}"`,
+      };
+
+      if (contentLength !== undefined) {
+        headers['Content-Length'] = contentLength;
+      }
+
+      res.writeHead(200, headers);
+
+      // Prevent socket leak if client aborts download
+      res.on('close', () => {
+        stream.destroy();
       });
 
       stream.pipe(res);
