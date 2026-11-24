@@ -1,0 +1,49 @@
+name: Publish Package to NPM
+
+on:
+  release:
+    types: [published]
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'NPM distribution tag (e.g. latest, beta)'
+        required: true
+        default: 'latest'
+
+jobs:
+  publish:
+    name: Build & Publish to NPM
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Required for NPM provenance authentication
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Code Quality Checks
+        run: |
+          npm run format:check
+          npm run lint
+
+      - name: Build TypeScript library & declaration maps
+        run: npm run build
+
+      - name: Publish to NPM
+        run: npm publish --access public --tag ${{ github.event.inputs.tag || 'latest' }} --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
