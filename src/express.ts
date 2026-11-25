@@ -81,6 +81,9 @@ export function createMediaRouter(options?: CreateMediaRouterOptions): Router {
   // List media
   router.get('/', controller.listMedia);
 
+  // Storage analytics and statistics breakdown
+  router.get('/stats', controller.getStats);
+
   // View / Stream media
   router.get('/:key/view', controller.viewOrStreamMedia);
   router.get('/:key/stream', controller.viewOrStreamMedia);

@@ -13,6 +13,9 @@ router.post('/presigned-upload-url', MediaController.getPresignedUploadUrl);
 // List all media or filter by ?category=images|videos|documents|audio|files
 router.get('/', MediaController.listMedia);
 
+// Storage analytics and statistics breakdown
+router.get('/stats', MediaController.getStats);
+
 // View inline (images, PDFs) or stream (videos/audio with HTTP 206 Range seeking)
 router.get('/:key/view', MediaController.viewOrStreamMedia);
 
