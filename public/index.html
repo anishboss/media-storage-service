@@ -320,6 +320,50 @@
       .btn-secondary:hover:not(:disabled) {
         background-color: #64748b;
       }
+
+      /* Storage Stats Widget */
+      .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        gap: 0.75rem;
+      }
+
+      .stat-card {
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid var(--border);
+        border-radius: 0.5rem;
+        padding: 0.75rem 1rem;
+        text-align: center;
+        transition:
+          transform 0.15s ease,
+          border-color 0.15s ease;
+      }
+
+      .stat-card:hover {
+        border-color: var(--accent);
+        transform: translateY(-2px);
+      }
+
+      .stat-title {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        letter-spacing: 0.05em;
+        margin-bottom: 0.25rem;
+      }
+
+      .stat-value {
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: #f8fafc;
+      }
+
+      .stat-sub {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-top: 0.2rem;
+      }
     </style>
   </head>
   <body>
@@ -337,6 +381,61 @@
           <span class="badge badge-doc">Documents &amp; Files (PDF, ZIP, CSV)</span>
         </div>
       </header>
+
+      <!-- Storage Metrics & Analytics Widget -->
+      <div class="card" style="margin-bottom: 2rem">
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+          "
+        >
+          <h2 style="margin-bottom: 0">📊 Storage Overview &amp; Analytics</h2>
+          <button
+            class="btn-sm btn-secondary"
+            onclick="loadStorageStats()"
+            style="width: auto; padding: 0.3rem 0.75rem; font-size: 0.75rem"
+          >
+            🔄 Refresh Stats
+          </button>
+        </div>
+        <div class="stats-container" id="statsContainer">
+          <div class="stat-card">
+            <div class="stat-title">Total Storage</div>
+            <div class="stat-value" id="statTotalSize">-</div>
+            <div class="stat-sub" id="statTotalObjects">- objects</div>
+          </div>
+          <div class="stat-card" style="border-top: 3px solid var(--img-color)">
+            <div class="stat-title" style="color: var(--img-color)">Images</div>
+            <div class="stat-value" id="statImagesSize">-</div>
+            <div class="stat-sub" id="statImagesCount">- files</div>
+          </div>
+          <div class="stat-card" style="border-top: 3px solid var(--vid-color)">
+            <div class="stat-title" style="color: var(--vid-color)">Videos</div>
+            <div class="stat-value" id="statVideosSize">-</div>
+            <div class="stat-sub" id="statVideosCount">- files</div>
+          </div>
+          <div class="stat-card" style="border-top: 3px solid #38bdf8">
+            <div class="stat-title" style="color: #38bdf8">Audio</div>
+            <div class="stat-value" id="statAudioSize">-</div>
+            <div class="stat-sub" id="statAudioCount">- files</div>
+          </div>
+          <div class="stat-card" style="border-top: 3px solid var(--doc-color)">
+            <div class="stat-title" style="color: var(--doc-color)">Documents</div>
+            <div class="stat-value" id="statDocsSize">-</div>
+            <div class="stat-sub" id="statDocsCount">- files</div>
+          </div>
+          <div class="stat-card" style="border-top: 3px solid #94a3b8">
+            <div class="stat-title" style="color: #94a3b8">Files</div>
+            <div class="stat-value" id="statFilesSize">-</div>
+            <div class="stat-sub" id="statFilesCount">- files</div>
+          </div>
+        </div>
+      </div>
 
       <div class="grid">
         <!-- Method 1: Direct Server Upload -->
@@ -509,6 +608,7 @@
               status.textContent = 'Upload successful!';
               resetUploadForm('direct');
               loadMediaList();
+              loadStorageStats();
               previewMedia(res.data.key, res.data.contentType);
             } else {
               btn.disabled = false;
@@ -579,6 +679,7 @@
               status.textContent = 'Direct storage upload complete!';
               resetUploadForm('presigned');
               loadMediaList();
+              loadStorageStats();
               previewMedia(ticketData.data.key, ticketData.data.contentType);
             } else {
               btn.disabled = false;
@@ -630,6 +731,54 @@
         loadMediaList();
       }
 
+      // Load storage statistics
+      async function loadStorageStats() {
+        try {
+          const res = await fetch('/api/media/stats');
+          const data = await res.json();
+          if (!data.success || !data.data) return;
+
+          const stats = data.data;
+          document.getElementById('statTotalSize').textContent = stats.totalFormattedSize;
+          document.getElementById('statTotalObjects').textContent = `${stats.totalObjects} objects`;
+
+          if (stats.categories) {
+            if (stats.categories.images) {
+              document.getElementById('statImagesSize').textContent =
+                stats.categories.images.formattedSize;
+              document.getElementById('statImagesCount').textContent =
+                `${stats.categories.images.count} files`;
+            }
+            if (stats.categories.videos) {
+              document.getElementById('statVideosSize').textContent =
+                stats.categories.videos.formattedSize;
+              document.getElementById('statVideosCount').textContent =
+                `${stats.categories.videos.count} files`;
+            }
+            if (stats.categories.audio) {
+              document.getElementById('statAudioSize').textContent =
+                stats.categories.audio.formattedSize;
+              document.getElementById('statAudioCount').textContent =
+                `${stats.categories.audio.count} files`;
+            }
+            if (stats.categories.documents) {
+              document.getElementById('statDocsSize').textContent =
+                stats.categories.documents.formattedSize;
+              document.getElementById('statDocsCount').textContent =
+                `${stats.categories.documents.count} files`;
+            }
+            if (stats.categories.files) {
+              document.getElementById('statFilesSize').textContent =
+                stats.categories.files.formattedSize;
+              document.getElementById('statFilesCount').textContent =
+                `${stats.categories.files.count} files`;
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to fetch storage stats:', e);
+        }
+      }
+
       // Load media list
       async function loadMediaList() {
         const listEl = document.getElementById('mediaList');
@@ -678,6 +827,7 @@
         try {
           await fetch(`/api/media/${encodeURIComponent(key)}`, { method: 'DELETE' });
           loadMediaList();
+          loadStorageStats();
         } catch {
           alert('Failed to delete item');
         }
@@ -692,6 +842,7 @@
       }
 
       loadMediaList();
+      loadStorageStats();
     </script>
   </body>
 </html>

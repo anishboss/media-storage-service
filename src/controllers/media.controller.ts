@@ -290,6 +290,23 @@ export class MediaController {
     }
   };
 
+  /**
+   * 8. Storage Statistics & Metrics
+   */
+  public getStats = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const prefix = req.query.prefix as string | undefined;
+      const stats = await this.service.getStats(prefix);
+
+      res.status(200).json({
+        success: true,
+        data: stats,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   // Static backward compatibility wrappers for existing server routes
   private static defaultController = new MediaController();
   public static uploadDirect = (req: Request, res: Response, next: NextFunction) =>
@@ -306,4 +323,6 @@ export class MediaController {
     MediaController.defaultController.listMedia(req, res, next);
   public static deleteMedia = (req: Request, res: Response, next: NextFunction) =>
     MediaController.defaultController.deleteMedia(req, res, next);
+  public static getStats = (req: Request, res: Response, next: NextFunction) =>
+    MediaController.defaultController.getStats(req, res, next);
 }

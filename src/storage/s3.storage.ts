@@ -17,7 +17,9 @@ import {
   PresignedUploadResponse,
   StreamResult,
   StorageItem,
+  StorageStats,
 } from './storage.interface.js';
+import { detectCategory, formatBytes, MediaCategory } from '../utils/media-type.util.js';
 
 export interface S3StorageConfig {
   bucket: string;
@@ -202,5 +204,80 @@ export class S3StorageService implements IStorageService {
       size: item.Size,
       lastModified: item.LastModified,
     }));
+  }
+
+  /**
+   * Retrieves aggregated storage statistics: total objects, total bytes, and breakdown by media category.
+   * Handles pagination automatically across large buckets.
+   */
+  async getStats(prefix?: string): Promise<StorageStats> {
+    const categories: Record<MediaCategory, { count: number; bytes: number }> = {
+      images: { count: 0, bytes: 0 },
+      videos: { count: 0, bytes: 0 },
+      audio: { count: 0, bytes: 0 },
+      documents: { count: 0, bytes: 0 },
+      files: { count: 0, bytes: 0 },
+    };
+
+    let totalObjects = 0;
+    let totalBytes = 0;
+    let continuationToken: string | undefined = undefined;
+
+    do {
+      const command: ListObjectsV2Command = new ListObjectsV2Command({
+        Bucket: this.bucket,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      });
+
+      const response = await this.client.send(command);
+      const items = response.Contents || [];
+
+      for (const item of items) {
+        if (!item.Key) continue;
+        const size = item.Size || 0;
+        totalObjects += 1;
+        totalBytes += size;
+
+        const category = detectCategory(undefined, item.Key);
+        categories[category].count += 1;
+        categories[category].bytes += size;
+      }
+
+      continuationToken = response.IsTruncated ? response.NextContinuationToken : undefined;
+    } while (continuationToken);
+
+    return {
+      totalObjects,
+      totalBytes,
+      totalFormattedSize: formatBytes(totalBytes),
+      categories: {
+        images: {
+          count: categories.images.count,
+          bytes: categories.images.bytes,
+          formattedSize: formatBytes(categories.images.bytes),
+        },
+        videos: {
+          count: categories.videos.count,
+          bytes: categories.videos.bytes,
+          formattedSize: formatBytes(categories.videos.bytes),
+        },
+        audio: {
+          count: categories.audio.count,
+          bytes: categories.audio.bytes,
+          formattedSize: formatBytes(categories.audio.bytes),
+        },
+        documents: {
+          count: categories.documents.count,
+          bytes: categories.documents.bytes,
+          formattedSize: formatBytes(categories.documents.bytes),
+        },
+        files: {
+          count: categories.files.count,
+          bytes: categories.files.bytes,
+          formattedSize: formatBytes(categories.files.bytes),
+        },
+      },
+    };
   }
 }

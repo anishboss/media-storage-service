@@ -1,4 +1,5 @@
 import { Readable } from 'stream';
+import type { MediaCategory } from '../utils/media-type.util.js';
 
 export interface StorageConfig {
   provider?: 's3' | 'minio' | 'aws' | string;
@@ -48,6 +49,19 @@ export interface StorageItem {
   contentType?: string;
 }
 
+export interface StorageCategoryStats {
+  count: number;
+  bytes: number;
+  formattedSize: string;
+}
+
+export interface StorageStats {
+  totalObjects: number;
+  totalBytes: number;
+  totalFormattedSize: string;
+  categories: Record<MediaCategory, StorageCategoryStats>;
+}
+
 /**
  * Storage Service Interface
  * All storage implementations (S3, MinIO, Azure Blob, Google Cloud Storage, Local Disk)
@@ -65,4 +79,5 @@ export interface IStorageService {
   getObjectStream(key: string, range?: string): Promise<StreamResult>;
   delete(key: string): Promise<void>;
   list(prefix?: string): Promise<StorageItem[]>;
+  getStats(prefix?: string): Promise<StorageStats>;
 }

@@ -7,6 +7,8 @@ export type {
   PresignedUploadResponse,
   StreamResult,
   StorageItem,
+  StorageCategoryStats,
+  StorageStats,
 } from './storage/storage.interface.js';
 
 // S3 & MinIO Adapter Implementation
@@ -16,6 +18,6 @@ export type { S3StorageConfig } from './storage/s3.storage.js';
 // Factory & Client Creator
 export { createStorageClient, StorageFactory } from './storage/storage.factory.js';
 
-// Media Utilities (classification, key generation)
-export { detectCategory, generateStorageKey } from './utils/media-type.util.js';
+// Media Utilities (classification, key generation, formatting)
+export { detectCategory, generateStorageKey, formatBytes } from './utils/media-type.util.js';
 export type { MediaCategory } from './utils/media-type.util.js';

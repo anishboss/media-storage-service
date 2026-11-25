@@ -65,3 +65,16 @@ export function generateStorageKey(
 
   return { key, category, contentType };
 }
+
+/**
+ * Formats a byte number into human-readable units (e.g. 1.25 MB, 500 KB)
+ */
+export function formatBytes(bytes: number, decimals: number = 2): string {
+  if (bytes <= 0) return '0 B';
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  const safeI = Math.min(i, sizes.length - 1);
+  return `${parseFloat((bytes / Math.pow(k, safeI)).toFixed(dm))} ${sizes[safeI]}`;
+}
