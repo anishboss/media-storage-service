@@ -476,6 +476,147 @@ export class MediaController {
     }
   };
 
+  /**
+   * 14. Direct Batch Server Upload (Multi-File)
+   */
+  public uploadMultiple = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    const rawFiles = req.files;
+    let files: Express.Multer.File[] = [];
+
+    if (Array.isArray(rawFiles)) {
+      files = rawFiles;
+    } else if (rawFiles && typeof rawFiles === 'object') {
+      files = Object.values(rawFiles).flat();
+    } else if (req.file) {
+      files = [req.file];
+    }
+
+    if (!files || files.length === 0) {
+      res.status(400).json({ success: false, message: 'No files provided for upload' });
+      return;
+    }
+
+    const preferredCategory = req.body.category as MediaCategory | undefined;
+
+    try {
+      const uploadPromises = files.map(async (file) => {
+        const { key, category, contentType } = generateStorageKey(
+          file.originalname,
+          file.mimetype,
+          preferredCategory
+        );
+
+        const fileStream = fs.createReadStream(file.path);
+
+        const result = await this.service.upload({
+          key,
+          body: fileStream,
+          contentType,
+          contentLength: file.size,
+          metadata: {
+            originalName: file.originalname,
+            category,
+            uploadedAt: new Date().toISOString(),
+          },
+        });
+
+        await fs.promises.unlink(file.path).catch(() => {});
+        const encodedKey = encodeURIComponent(result.key);
+
+        return {
+          key: result.key,
+          bucket: result.bucket,
+          category,
+          size: file.size,
+          contentType,
+          originalName: file.originalname,
+          viewUrl: `/api/media/${encodedKey}/view`,
+          downloadUrl: `/api/media/${encodedKey}/download`,
+          presignedUrlEndpoint: `/api/media/${encodedKey}/presigned-url`,
+        };
+      });
+
+      const uploaded = await Promise.all(uploadPromises);
+
+      res.status(201).json({
+        success: true,
+        message: `${uploaded.length} file(s) uploaded successfully`,
+        count: uploaded.length,
+        data: uploaded,
+      });
+    } catch (error) {
+      for (const file of files) {
+        if (file?.path) {
+          await fs.promises.unlink(file.path).catch(() => {});
+        }
+      }
+      next(error);
+    }
+  };
+
+  /**
+   * 15. Presigned Batch Direct Upload URLs
+   */
+  public getPresignedUploadUrls = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const filesInput = req.body?.files;
+
+      if (!Array.isArray(filesInput) || filesInput.length === 0) {
+        res.status(400).json({
+          success: false,
+          message: 'An array of "files" with at least one item is required',
+        });
+        return;
+      }
+
+      const ticketsPromises = filesInput.map(
+        async (item: { fileName: string; contentType?: string; category?: MediaCategory }) => {
+          if (!item.fileName) {
+            throw new Error('Every file object must include a "fileName"');
+          }
+
+          const { key, category, contentType } = generateStorageKey(
+            item.fileName,
+            item.contentType,
+            item.category
+          );
+
+          const presignedData = await this.service.getUploadPresignedUrl(key, contentType, 3600);
+
+          return {
+            originalName: item.fileName,
+            uploadUrl: presignedData.uploadUrl,
+            key: presignedData.key,
+            bucket: presignedData.bucket,
+            category,
+            contentType,
+            expiresInSeconds: presignedData.expiresInSeconds,
+            method: 'PUT',
+          };
+        }
+      );
+
+      const tickets = await Promise.all(ticketsPromises);
+
+      res.status(200).json({
+        success: true,
+        message: `${tickets.length} presigned upload ticket(s) generated successfully`,
+        count: tickets.length,
+        data: tickets,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   // Static backward compatibility wrappers for existing server routes
   private static defaultController = new MediaController();
   public static uploadDirect = (req: Request, res: Response, next: NextFunction) =>
@@ -504,4 +645,8 @@ export class MediaController {
     MediaController.defaultController.copyMedia(req, res, next);
   public static moveMedia = (req: Request, res: Response, next: NextFunction) =>
     MediaController.defaultController.moveMedia(req, res, next);
+  public static uploadMultiple = (req: Request, res: Response, next: NextFunction) =>
+    MediaController.defaultController.uploadMultiple(req, res, next);
+  public static getPresignedUploadUrls = (req: Request, res: Response, next: NextFunction) =>
+    MediaController.defaultController.getPresignedUploadUrls(req, res, next);
 }

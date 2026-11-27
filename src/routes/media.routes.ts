@@ -7,8 +7,23 @@ const router = Router();
 // Upload any file directly to server (single field named 'file' or 'media')
 router.post('/upload', mediaUploadMiddleware.single('file'), MediaController.uploadDirect);
 
+// Upload multiple files directly to server (field named 'files' or 'file', up to 25 files)
+router.post(
+  '/upload-multiple',
+  mediaUploadMiddleware.array('files', 25),
+  MediaController.uploadMultiple
+);
+router.post(
+  '/upload-batch',
+  mediaUploadMiddleware.array('files', 25),
+  MediaController.uploadMultiple
+);
+
 // Request a pre-signed URL to upload directly to MinIO/S3
 router.post('/presigned-upload-url', MediaController.getPresignedUploadUrl);
+
+// Request batch of pre-signed URLs for multi-file direct upload
+router.post('/presigned-upload-urls', MediaController.getPresignedUploadUrls);
 
 // List all media or filter by ?category=images|videos|documents|audio|files
 router.get('/', MediaController.listMedia);

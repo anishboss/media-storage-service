@@ -445,8 +445,13 @@
             Upload files to Node.js, which streams them to object storage using multipart chunking.
           </p>
           <div class="file-dropzone" onclick="document.getElementById('directFileInput').click()">
-            <div>Click or drop any file, image, or video here</div>
-            <input type="file" id="directFileInput" onchange="handleFileSelect('direct')" />
+            <div>Click or drop file(s), image(s), or video(s) here (multi-select supported)</div>
+            <input
+              type="file"
+              id="directFileInput"
+              multiple
+              onchange="handleFileSelect('direct')"
+            />
           </div>
           <div id="directFileLabel" class="selected-file-label"></div>
           <button id="directUploadBtn" onclick="uploadDirect()" disabled>Upload to Server</button>
@@ -467,8 +472,13 @@
             class="file-dropzone"
             onclick="document.getElementById('presignedFileInput').click()"
           >
-            <div>Click or drop any file, image, or video here</div>
-            <input type="file" id="presignedFileInput" onchange="handleFileSelect('presigned')" />
+            <div>Click or drop file(s), image(s), or video(s) here (multi-select supported)</div>
+            <input
+              type="file"
+              id="presignedFileInput"
+              multiple
+              onchange="handleFileSelect('presigned')"
+            />
           </div>
           <div id="presignedFileLabel" class="selected-file-label"></div>
           <button id="presignedUploadBtn" onclick="uploadPresigned()" disabled>
@@ -798,13 +808,13 @@
     </div>
 
     <script>
-      let directFile = null;
-      let presignedFile = null;
+      let directFiles = [];
+      let presignedFiles = [];
       let currentFilter = '';
 
       function resetUploadForm(type) {
         if (type === 'direct') {
-          directFile = null;
+          directFiles = [];
           const input = document.getElementById('directFileInput');
           if (input) input.value = '';
           const label = document.getElementById('directFileLabel');
@@ -816,7 +826,7 @@
             if (progressWrap) progressWrap.style.display = 'none';
           }, 3000);
         } else {
-          presignedFile = null;
+          presignedFiles = [];
           const input = document.getElementById('presignedFileInput');
           if (input) input.value = '';
           const label = document.getElementById('presignedFileLabel');
@@ -844,30 +854,36 @@
       function handleFileSelect(type) {
         if (type === 'direct') {
           const input = document.getElementById('directFileInput');
-          directFile = input.files[0];
+          directFiles = Array.from(input.files || []);
           const label = document.getElementById('directFileLabel');
-          if (directFile) {
-            label.innerHTML = `${escapeHtml(directFile.name)} (${(directFile.size / (1024 * 1024)).toFixed(2)} MB) <span style="cursor:pointer; color:#ef4444; margin-left:8px;" onclick="clearSelection('direct')">✕ Remove</span>`;
+          if (directFiles.length === 1) {
+            label.innerHTML = `${escapeHtml(directFiles[0].name)} (${(directFiles[0].size / (1024 * 1024)).toFixed(2)} MB) <span style="cursor:pointer; color:#ef4444; margin-left:8px;" onclick="clearSelection('direct')">✕ Remove</span>`;
+          } else if (directFiles.length > 1) {
+            const totalBytes = directFiles.reduce((acc, f) => acc + f.size, 0);
+            label.innerHTML = `<strong>${directFiles.length} files selected</strong> (Total: ${(totalBytes / (1024 * 1024)).toFixed(2)} MB) <span style="cursor:pointer; color:#ef4444; margin-left:8px;" onclick="clearSelection('direct')">✕ Remove</span>`;
           } else {
             label.textContent = '';
           }
-          document.getElementById('directUploadBtn').disabled = !directFile;
+          document.getElementById('directUploadBtn').disabled = directFiles.length === 0;
         } else {
           const input = document.getElementById('presignedFileInput');
-          presignedFile = input.files[0];
+          presignedFiles = Array.from(input.files || []);
           const label = document.getElementById('presignedFileLabel');
-          if (presignedFile) {
-            label.innerHTML = `${escapeHtml(presignedFile.name)} (${(presignedFile.size / (1024 * 1024)).toFixed(2)} MB) <span style="cursor:pointer; color:#ef4444; margin-left:8px;" onclick="clearSelection('presigned')">✕ Remove</span>`;
+          if (presignedFiles.length === 1) {
+            label.innerHTML = `${escapeHtml(presignedFiles[0].name)} (${(presignedFiles[0].size / (1024 * 1024)).toFixed(2)} MB) <span style="cursor:pointer; color:#ef4444; margin-left:8px;" onclick="clearSelection('presigned')">✕ Remove</span>`;
+          } else if (presignedFiles.length > 1) {
+            const totalBytes = presignedFiles.reduce((acc, f) => acc + f.size, 0);
+            label.innerHTML = `<strong>${presignedFiles.length} files selected</strong> (Total: ${(totalBytes / (1024 * 1024)).toFixed(2)} MB) <span style="cursor:pointer; color:#ef4444; margin-left:8px;" onclick="clearSelection('presigned')">✕ Remove</span>`;
           } else {
             label.textContent = '';
           }
-          document.getElementById('presignedUploadBtn').disabled = !presignedFile;
+          document.getElementById('presignedUploadBtn').disabled = presignedFiles.length === 0;
         }
       }
 
-      // Direct Upload
+      // Direct Upload (Single or Multi-file)
       async function uploadDirect() {
-        if (!directFile) return;
+        if (!directFiles.length) return;
 
         const btn = document.getElementById('directUploadBtn');
         const status = document.getElementById('directStatus');
@@ -878,13 +894,18 @@
         progressWrap.style.display = 'block';
         progressBar.style.width = '0%';
         status.className = 'status-msg';
-        status.textContent = 'Uploading to server...';
+        status.textContent =
+          directFiles.length > 1
+            ? `Uploading ${directFiles.length} files to server...`
+            : 'Uploading to server...';
 
         const formData = new FormData();
-        formData.append('file', directFile);
+        directFiles.forEach((file) => {
+          formData.append('files', file);
+        });
 
         const xhr = new XMLHttpRequest();
-        xhr.open('POST', '/api/media/upload');
+        xhr.open('POST', '/api/media/upload-multiple');
 
         xhr.upload.onprogress = (e) => {
           if (e.lengthComputable) {
@@ -898,11 +919,13 @@
             const res = JSON.parse(xhr.responseText);
             if (xhr.status >= 200 && xhr.status < 300) {
               status.className = 'status-msg success';
-              status.textContent = 'Upload successful!';
+              status.textContent = `Upload successful! (${res.count || directFiles.length} file(s))`;
               resetUploadForm('direct');
               loadMediaList();
               loadStorageStats();
-              previewMedia(res.data.key, res.data.contentType);
+              if (res.data && res.data.length > 0) {
+                previewMedia(res.data[0].key, res.data[0].contentType);
+              }
             } else {
               btn.disabled = false;
               status.className = 'status-msg error';
@@ -924,11 +947,11 @@
         xhr.send(formData);
       }
 
-      // Presigned Upload
+      // Presigned Upload (Single or Multi-file)
       async function uploadPresigned() {
-        if (!presignedFile) return;
+        if (!presignedFiles.length) return;
 
-        const fileToUpload = presignedFile;
+        const filesToUpload = [...presignedFiles];
         const btn = document.getElementById('presignedUploadBtn');
         const status = document.getElementById('presignedStatus');
         const progressWrap = document.getElementById('presignedProgressWrap');
@@ -938,56 +961,57 @@
         progressWrap.style.display = 'block';
         progressBar.style.width = '0%';
         status.className = 'status-msg';
-        status.textContent = 'Requesting presigned upload ticket...';
+        status.textContent = `Requesting presigned upload ticket(s) for ${filesToUpload.length} file(s)...`;
 
         try {
-          const ticketRes = await fetch('/api/media/presigned-upload-url', {
+          const ticketRes = await fetch('/api/media/presigned-upload-urls', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              fileName: fileToUpload.name,
-              contentType: fileToUpload.type || 'application/octet-stream',
+              files: filesToUpload.map((f) => ({
+                fileName: f.name,
+                contentType: f.type || 'application/octet-stream',
+              })),
             }),
           });
 
           const ticketData = await ticketRes.json();
-          if (!ticketRes.ok) throw new Error(ticketData.message || 'Failed to get ticket');
+          if (!ticketRes.ok) throw new Error(ticketData.message || 'Failed to get tickets');
 
-          status.textContent = 'Uploading directly to object storage...';
+          status.textContent = `Uploading ${filesToUpload.length} file(s) directly to object storage...`;
 
-          const xhr = new XMLHttpRequest();
-          xhr.open('PUT', ticketData.data.uploadUrl);
-          xhr.setRequestHeader('Content-Type', ticketData.data.contentType);
+          let completed = 0;
+          const uploadPromises = ticketData.data.map(async (ticket, idx) => {
+            const file = filesToUpload[idx];
+            const xhr = new XMLHttpRequest();
+            return new Promise((resolve, reject) => {
+              xhr.open('PUT', ticket.uploadUrl);
+              xhr.setRequestHeader('Content-Type', ticket.contentType);
+              xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                  completed++;
+                  progressBar.style.width =
+                    Math.round((completed / filesToUpload.length) * 100) + '%';
+                  resolve(ticket);
+                } else {
+                  reject(new Error(`Storage error for ${file.name}: ${xhr.status}`));
+                }
+              };
+              xhr.onerror = () => reject(new Error(`Network error uploading ${file.name}`));
+              xhr.send(file);
+            });
+          });
 
-          xhr.upload.onprogress = (e) => {
-            if (e.lengthComputable) {
-              const percent = Math.round((e.loaded / e.total) * 100);
-              progressBar.style.width = percent + '%';
-            }
-          };
+          await Promise.all(uploadPromises);
 
-          xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) {
-              status.className = 'status-msg success';
-              status.textContent = 'Direct storage upload complete!';
-              resetUploadForm('presigned');
-              loadMediaList();
-              loadStorageStats();
-              previewMedia(ticketData.data.key, ticketData.data.contentType);
-            } else {
-              btn.disabled = false;
-              status.className = 'status-msg error';
-              status.textContent = `Storage error: ${xhr.status}`;
-            }
-          };
-
-          xhr.onerror = () => {
-            btn.disabled = false;
-            status.className = 'status-msg error';
-            status.textContent = 'Network error during direct storage upload';
-          };
-
-          xhr.send(fileToUpload);
+          status.className = 'status-msg success';
+          status.textContent = `Direct storage upload of ${filesToUpload.length} file(s) complete!`;
+          resetUploadForm('presigned');
+          loadMediaList();
+          loadStorageStats();
+          if (ticketData.data.length > 0) {
+            previewMedia(ticketData.data[0].key, ticketData.data[0].contentType);
+          }
         } catch (err) {
           btn.disabled = false;
           status.className = 'status-msg error';
