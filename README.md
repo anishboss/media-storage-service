@@ -119,6 +119,8 @@ Visit **`http://localhost:4000`** in your browser to test:
 | `GET`    | `/api/media`                      | List stored media (supports `?category=images\|videos\|documents\|files`). |
 | `GET`    | `/api/media/stats`                | Storage analytics: bytes, object counts, and media category breakdown.     |
 | `GET`    | `/api/media/:key/view`            | Inline view (images/PDFs) or streaming (videos/audio with Range seeking).  |
+| `GET`    | `/api/media/:key/metadata`        | Object metadata inspector (size, MIME, ETag, custom S3 headers).           |
+| `GET`    | `/api/media/:key/exists`          | Check if object exists in storage (supports `HEAD /:key` as well).         |
 | `GET`    | `/api/media/:key/download`        | Force file download (`Content-Disposition: attachment`).                   |
 | `GET`    | `/api/media/:key/presigned-url`   | Get time-limited signed download/view URL.                                 |
 | `POST`   | `/api/media/batch-delete`         | Batch delete multiple media objects (`{ keys: string[] }`).                |

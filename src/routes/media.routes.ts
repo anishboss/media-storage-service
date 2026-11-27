@@ -22,6 +22,13 @@ router.get('/:key/view', MediaController.viewOrStreamMedia);
 // Alias: /stream route for backward compatibility
 router.get('/:key/stream', MediaController.viewOrStreamMedia);
 
+// Object metadata and properties inspector
+router.get('/:key/metadata', MediaController.getMetadata);
+
+// Check if object exists (GET /:key/exists or HEAD /:key)
+router.get('/:key/exists', MediaController.checkExists);
+router.head('/:key', MediaController.checkExists);
+
 // Force download attachment
 router.get('/:key/download', MediaController.downloadMedia);
 

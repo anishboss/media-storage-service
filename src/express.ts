@@ -88,6 +88,11 @@ export function createMediaRouter(options?: CreateMediaRouterOptions): Router {
   router.get('/:key/view', controller.viewOrStreamMedia);
   router.get('/:key/stream', controller.viewOrStreamMedia);
 
+  // Object metadata and existence inspection
+  router.get('/:key/metadata', controller.getMetadata);
+  router.get('/:key/exists', controller.checkExists);
+  router.head('/:key', controller.checkExists);
+
   // Force download
   router.get('/:key/download', controller.downloadMedia);
 

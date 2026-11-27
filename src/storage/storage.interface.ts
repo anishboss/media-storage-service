@@ -74,6 +74,17 @@ export interface BatchDeleteResult {
   errorCount: number;
 }
 
+export interface StorageMetadata {
+  key: string;
+  size: number;
+  formattedSize: string;
+  contentType: string;
+  lastModified?: Date;
+  eTag?: string;
+  category: MediaCategory;
+  metadata: Record<string, string>;
+}
+
 /**
  * Storage Service Interface
  * All storage implementations (S3, MinIO, Azure Blob, Google Cloud Storage, Local Disk)
@@ -93,4 +104,6 @@ export interface IStorageService {
   deleteMany(keys: string[]): Promise<BatchDeleteResult>;
   list(prefix?: string): Promise<StorageItem[]>;
   getStats(prefix?: string): Promise<StorageStats>;
+  getMetadata(key: string): Promise<StorageMetadata>;
+  exists(key: string): Promise<boolean>;
 }
