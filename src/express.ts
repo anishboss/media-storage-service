@@ -94,6 +94,10 @@ export function createMediaRouter(options?: CreateMediaRouterOptions): Router {
   // Presigned download URL
   router.get('/:key/presigned-url', controller.getPresignedDownloadUrl);
 
+  // Batch delete media
+  router.post('/batch-delete', controller.deleteBatch);
+  router.delete('/batch', controller.deleteBatch);
+
   // Delete media
   router.delete('/:key', controller.deleteMedia);
 
