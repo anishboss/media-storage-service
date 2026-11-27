@@ -75,8 +75,13 @@ export function createMediaRouter(options?: CreateMediaRouterOptions): Router {
   // Upload single file
   router.post('/upload', uploader.single('file'), controller.uploadDirect);
 
+  // Upload multiple files (batch)
+  router.post('/upload-multiple', uploader.array('files', 25), controller.uploadMultiple);
+  router.post('/upload-batch', uploader.array('files', 25), controller.uploadMultiple);
+
   // Request presigned upload URL
   router.post('/presigned-upload-url', controller.getPresignedUploadUrl);
+  router.post('/presigned-upload-urls', controller.getPresignedUploadUrls);
 
   // List media
   router.get('/', controller.listMedia);

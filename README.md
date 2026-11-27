@@ -112,21 +112,23 @@ Visit **`http://localhost:4000`** in your browser to test:
 
 ## 📡 REST API Reference
 
-| Method   | Endpoint                          | Description                                                                |
-| -------- | --------------------------------- | -------------------------------------------------------------------------- |
-| `POST`   | `/api/media/upload`               | Direct multipart upload (`file` field). Piped directly to storage.         |
-| `POST`   | `/api/media/presigned-upload-url` | Generate presigned PUT URL for client-to-storage direct upload.            |
-| `GET`    | `/api/media`                      | List stored media (supports `?category=images\|videos\|documents\|files`). |
-| `GET`    | `/api/media/stats`                | Storage analytics: bytes, object counts, and media category breakdown.     |
-| `GET`    | `/api/media/:key/view`            | Inline view (images/PDFs) or streaming (videos/audio with Range seeking).  |
-| `GET`    | `/api/media/:key/metadata`        | Object metadata inspector (size, MIME, ETag, custom S3 headers).           |
-| `GET`    | `/api/media/:key/exists`          | Check if object exists in storage (supports `HEAD /:key` as well).         |
-| `GET`    | `/api/media/:key/download`        | Force file download (`Content-Disposition: attachment`).                   |
-| `GET`    | `/api/media/:key/presigned-url`   | Get time-limited signed download/view URL.                                 |
-| `POST`   | `/api/media/batch-delete`         | Batch delete multiple media objects (`{ keys: string[] }`).                |
-| `POST`   | `/api/media/copy`                 | Copy media object within storage (`{ sourceKey, destinationKey }`).        |
-| `POST`   | `/api/media/move`                 | Move / Rename media object (`{ sourceKey, destinationKey }`).              |
-| `DELETE` | `/api/media/:key`                 | Delete single media object from storage.                                   |
+| Method   | Endpoint                           | Description                                                                |
+| -------- | ---------------------------------- | -------------------------------------------------------------------------- |
+| `POST`   | `/api/media/upload`                | Direct multipart upload (`file` field). Piped directly to storage.         |
+| `POST`   | `/api/media/upload-multiple`       | Batch multipart upload (`files` field, up to 25 files concurrently).       |
+| `POST`   | `/api/media/presigned-upload-url`  | Generate presigned PUT URL for client-to-storage direct upload.            |
+| `POST`   | `/api/media/presigned-upload-urls` | Generate batch of presigned PUT URLs for client-to-storage direct uploads. |
+| `GET`    | `/api/media`                       | List stored media (supports `?category=images\|videos\|documents\|files`). |
+| `GET`    | `/api/media/stats`                 | Storage analytics: bytes, object counts, and media category breakdown.     |
+| `GET`    | `/api/media/:key/view`             | Inline view (images/PDFs) or streaming (videos/audio with Range seeking).  |
+| `GET`    | `/api/media/:key/metadata`         | Object metadata inspector (size, MIME, ETag, custom S3 headers).           |
+| `GET`    | `/api/media/:key/exists`           | Check if object exists in storage (supports `HEAD /:key` as well).         |
+| `GET`    | `/api/media/:key/download`         | Force file download (`Content-Disposition: attachment`).                   |
+| `GET`    | `/api/media/:key/presigned-url`    | Get time-limited signed download/view URL.                                 |
+| `POST`   | `/api/media/batch-delete`          | Batch delete multiple media objects (`{ keys: string[] }`).                |
+| `POST`   | `/api/media/copy`                  | Copy media object within storage (`{ sourceKey, destinationKey }`).        |
+| `POST`   | `/api/media/move`                  | Move / Rename media object (`{ sourceKey, destinationKey }`).              |
+| `DELETE` | `/api/media/:key`                  | Delete single media object from storage.                                   |
 
 _(Note: `/api/videos/*` routes remain fully supported as backward-compatible aliases)._
 
