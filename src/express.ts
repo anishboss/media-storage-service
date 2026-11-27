@@ -103,6 +103,11 @@ export function createMediaRouter(options?: CreateMediaRouterOptions): Router {
   router.post('/batch-delete', controller.deleteBatch);
   router.delete('/batch', controller.deleteBatch);
 
+  // Copy / Move media
+  router.post('/copy', controller.copyMedia);
+  router.post('/move', controller.moveMedia);
+  router.put('/move', controller.moveMedia);
+
   // Delete media
   router.delete('/:key', controller.deleteMedia);
 
