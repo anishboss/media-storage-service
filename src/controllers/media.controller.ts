@@ -346,6 +346,54 @@ export class MediaController {
     }
   };
 
+  /**
+   * 10. Get Object Metadata & Properties
+   */
+  public getMetadata = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const key = MediaController.getParamKey(req);
+      const metadata = await this.service.getMetadata(key);
+
+      res.status(200).json({
+        success: true,
+        data: metadata,
+      });
+    } catch (error: unknown) {
+      const err = error as { name?: string; $metadata?: { httpStatusCode?: number } };
+      if (err.name === 'NotFound' || err.$metadata?.httpStatusCode === 404) {
+        res.status(404).json({ success: false, message: 'Object not found in storage' });
+        return;
+      }
+      next(error);
+    }
+  };
+
+  /**
+   * 11. Check Object Existence (HEAD or GET)
+   */
+  public checkExists = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const key = MediaController.getParamKey(req);
+      const exists = await this.service.exists(key);
+
+      if (req.method === 'HEAD') {
+        if (exists) {
+          res.status(200).end();
+        } else {
+          res.status(404).end();
+        }
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        data: { key, exists },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   // Static backward compatibility wrappers for existing server routes
   private static defaultController = new MediaController();
   public static uploadDirect = (req: Request, res: Response, next: NextFunction) =>
@@ -366,4 +414,8 @@ export class MediaController {
     MediaController.defaultController.getStats(req, res, next);
   public static deleteBatch = (req: Request, res: Response, next: NextFunction) =>
     MediaController.defaultController.deleteBatch(req, res, next);
+  public static getMetadata = (req: Request, res: Response, next: NextFunction) =>
+    MediaController.defaultController.getMetadata(req, res, next);
+  public static checkExists = (req: Request, res: Response, next: NextFunction) =>
+    MediaController.defaultController.checkExists(req, res, next);
 }

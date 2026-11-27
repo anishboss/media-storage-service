@@ -2,6 +2,7 @@ import {
   S3Client,
   PutObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   DeleteObjectCommand,
   DeleteObjectsCommand,
   ListObjectsV2Command,
@@ -21,6 +22,7 @@ import {
   StorageStats,
   BatchDeleteResult,
   BatchDeleteError,
+  StorageMetadata,
 } from './storage.interface.js';
 import { detectCategory, formatBytes, MediaCategory } from '../utils/media-type.util.js';
 
@@ -241,6 +243,48 @@ export class S3StorageService implements IStorageService {
       successCount: deleted.length,
       errorCount: errors.length,
     };
+  }
+
+  /**
+   * Retrieves full object metadata including size, contentType, ETag, lastModified, and custom metadata headers.
+   */
+  async getMetadata(key: string): Promise<StorageMetadata> {
+    const command = new HeadObjectCommand({
+      Bucket: this.bucket,
+      Key: key,
+    });
+
+    const response = await this.client.send(command);
+    const size = response.ContentLength || 0;
+    const contentType = response.ContentType || 'application/octet-stream';
+    const category = detectCategory(contentType, key);
+
+    return {
+      key,
+      size,
+      formattedSize: formatBytes(size),
+      contentType,
+      lastModified: response.LastModified,
+      eTag: response.ETag?.replace(/"/g, ''),
+      category,
+      metadata: response.Metadata || {},
+    };
+  }
+
+  /**
+   * Checks whether an object exists in storage without fetching its content.
+   */
+  async exists(key: string): Promise<boolean> {
+    try {
+      await this.getMetadata(key);
+      return true;
+    } catch (error: unknown) {
+      const err = error as { name?: string; $metadata?: { httpStatusCode?: number } };
+      if (err.name === 'NotFound' || err.$metadata?.httpStatusCode === 404) {
+        return false;
+      }
+      throw error;
+    }
   }
 
   /**
