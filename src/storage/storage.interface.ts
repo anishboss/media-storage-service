@@ -62,6 +62,18 @@ export interface StorageStats {
   categories: Record<MediaCategory, StorageCategoryStats>;
 }
 
+export interface BatchDeleteError {
+  key: string;
+  message: string;
+}
+
+export interface BatchDeleteResult {
+  deleted: string[];
+  errors: BatchDeleteError[];
+  successCount: number;
+  errorCount: number;
+}
+
 /**
  * Storage Service Interface
  * All storage implementations (S3, MinIO, Azure Blob, Google Cloud Storage, Local Disk)
@@ -78,6 +90,7 @@ export interface IStorageService {
   getDownloadPresignedUrl(key: string, expiresInSeconds?: number): Promise<string>;
   getObjectStream(key: string, range?: string): Promise<StreamResult>;
   delete(key: string): Promise<void>;
+  deleteMany(keys: string[]): Promise<BatchDeleteResult>;
   list(prefix?: string): Promise<StorageItem[]>;
   getStats(prefix?: string): Promise<StorageStats>;
 }

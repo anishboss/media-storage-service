@@ -9,6 +9,8 @@ export type {
   StorageItem,
   StorageCategoryStats,
   StorageStats,
+  BatchDeleteResult,
+  BatchDeleteError,
 } from './storage/storage.interface.js';
 
 // S3 & MinIO Adapter Implementation

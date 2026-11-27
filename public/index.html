@@ -496,6 +496,61 @@
           <button class="filter-btn" onclick="setCategoryFilter('files')">Files</button>
         </div>
 
+        <!-- Bulk Action Toolbar -->
+        <div
+          class="bulk-toolbar"
+          id="bulkToolbar"
+          style="
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 0.6rem 1rem;
+            margin-bottom: 0.75rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+          "
+        >
+          <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.85rem">
+            <label
+              style="
+                display: flex;
+                align-items: center;
+                gap: 0.4rem;
+                cursor: pointer;
+                user-select: none;
+              "
+            >
+              <input
+                type="checkbox"
+                id="selectAllCheckbox"
+                onchange="toggleSelectAll(this.checked)"
+                style="accent-color: var(--accent); cursor: pointer; width: 16px; height: 16px"
+              />
+              <span>Select All</span>
+            </label>
+            <span style="color: var(--text-muted)">&bull;</span>
+            <span id="selectedCountText" style="color: #38bdf8; font-weight: 600"
+              >0 items selected</span
+            >
+          </div>
+          <div style="display: flex; gap: 0.5rem">
+            <button class="btn-sm btn-secondary" onclick="clearAllSelections()" style="width: auto">
+              Deselect All
+            </button>
+            <button
+              class="btn-sm btn-danger"
+              id="bulkDeleteBtn"
+              onclick="deleteSelected()"
+              style="width: auto"
+            >
+              🗑️ Delete Selected (<span id="bulkDeleteCount">0</span>)
+            </button>
+          </div>
+        </div>
+
         <ul class="media-list" id="mediaList">
           <li style="color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0">
             Loading media items...
@@ -787,9 +842,13 @@
           const res = await fetch(`/api/media${query}`);
           const data = await res.json();
 
+          clearAllSelections();
+
           if (!data.success || !data.data.length) {
             listEl.innerHTML =
               '<li style="color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0;">No items found.</li>';
+            const toolbar = document.getElementById('bulkToolbar');
+            if (toolbar) toolbar.style.display = 'none';
             return;
           }
 
@@ -800,11 +859,20 @@
 
               return `
             <li class="media-item">
-              <div class="media-info">
-                <span class="category-tag ${categoryClass}">${item.category}</span>
-                <strong>${escapeHtml(cleanName)}</strong>
-                <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">
-                  ${item.size ? (item.size / (1024 * 1024)).toFixed(2) + ' MB' : 'Unknown size'} &bull; ${new Date(item.lastModified).toLocaleString()}
+              <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 0;">
+                <input
+                  type="checkbox"
+                  class="media-checkbox"
+                  value="${escapeHtml(item.key)}"
+                  onchange="handleItemCheckboxChange()"
+                  style="accent-color: var(--accent); cursor: pointer; width: 16px; height: 16px; flex-shrink: 0;"
+                />
+                <div class="media-info" style="flex: 1; min-width: 0;">
+                  <span class="category-tag ${categoryClass}">${item.category}</span>
+                  <strong>${escapeHtml(cleanName)}</strong>
+                  <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">
+                    ${item.size ? (item.size / (1024 * 1024)).toFixed(2) + ' MB' : 'Unknown size'} &bull; ${new Date(item.lastModified).toLocaleString()}
+                  </div>
                 </div>
               </div>
               <div class="media-actions">
@@ -819,6 +887,95 @@
         } catch {
           listEl.innerHTML =
             '<li style="color: var(--danger); font-size: 0.85rem;">Failed to load items.</li>';
+        }
+      }
+
+      function getSelectedKeys() {
+        const checkboxes = document.querySelectorAll('.media-checkbox:checked');
+        return Array.from(checkboxes).map((cb) => cb.value);
+      }
+
+      function handleItemCheckboxChange() {
+        const selected = getSelectedKeys();
+        const allCheckboxes = document.querySelectorAll('.media-checkbox');
+        const selectAllCb = document.getElementById('selectAllCheckbox');
+        const toolbar = document.getElementById('bulkToolbar');
+        const countText = document.getElementById('selectedCountText');
+        const deleteCount = document.getElementById('bulkDeleteCount');
+
+        if (allCheckboxes.length > 0 && selected.length === allCheckboxes.length) {
+          selectAllCb.checked = true;
+          selectAllCb.indeterminate = false;
+        } else if (selected.length > 0) {
+          selectAllCb.checked = false;
+          selectAllCb.indeterminate = true;
+        } else {
+          selectAllCb.checked = false;
+          selectAllCb.indeterminate = false;
+        }
+
+        if (selected.length > 0) {
+          toolbar.style.display = 'flex';
+          countText.textContent = `${selected.length} item${selected.length > 1 ? 's' : ''} selected`;
+          deleteCount.textContent = selected.length;
+        } else {
+          toolbar.style.display = 'none';
+        }
+      }
+
+      function toggleSelectAll(checked) {
+        const checkboxes = document.querySelectorAll('.media-checkbox');
+        checkboxes.forEach((cb) => (cb.checked = checked));
+        handleItemCheckboxChange();
+      }
+
+      function clearAllSelections() {
+        const selectAllCb = document.getElementById('selectAllCheckbox');
+        if (selectAllCb) {
+          selectAllCb.checked = false;
+          selectAllCb.indeterminate = false;
+        }
+        const checkboxes = document.querySelectorAll('.media-checkbox');
+        checkboxes.forEach((cb) => (cb.checked = false));
+        const toolbar = document.getElementById('bulkToolbar');
+        if (toolbar) toolbar.style.display = 'none';
+      }
+
+      async function deleteSelected() {
+        const selected = getSelectedKeys();
+        if (selected.length === 0) return;
+
+        if (
+          !confirm(
+            `Are you sure you want to permanently delete ${selected.length} selected item(s)?`
+          )
+        ) {
+          return;
+        }
+
+        const deleteBtn = document.getElementById('bulkDeleteBtn');
+        deleteBtn.disabled = true;
+        const originalText = deleteBtn.innerHTML;
+        deleteBtn.textContent = 'Deleting...';
+
+        try {
+          const res = await fetch('/api/media/batch-delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ keys: selected }),
+          });
+
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || 'Batch delete failed');
+
+          clearAllSelections();
+          loadMediaList();
+          loadStorageStats();
+        } catch (err) {
+          alert('Batch delete error: ' + err.message);
+        } finally {
+          deleteBtn.disabled = false;
+          deleteBtn.innerHTML = originalText;
         }
       }
 

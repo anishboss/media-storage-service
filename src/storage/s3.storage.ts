@@ -3,6 +3,7 @@ import {
   PutObjectCommand,
   GetObjectCommand,
   DeleteObjectCommand,
+  DeleteObjectsCommand,
   ListObjectsV2Command,
   HeadBucketCommand,
   CreateBucketCommand,
@@ -18,6 +19,8 @@ import {
   StreamResult,
   StorageItem,
   StorageStats,
+  BatchDeleteResult,
+  BatchDeleteError,
 } from './storage.interface.js';
 import { detectCategory, formatBytes, MediaCategory } from '../utils/media-type.util.js';
 
@@ -186,6 +189,58 @@ export class S3StorageService implements IStorageService {
         Key: key,
       })
     );
+  }
+
+  /**
+   * Deletes multiple objects in batch.
+   * Automatically chunks requests into batches of up to 1,000 keys per S3 DeleteObjectsCommand specification.
+   */
+  async deleteMany(keys: string[]): Promise<BatchDeleteResult> {
+    if (!keys || keys.length === 0) {
+      return { deleted: [], errors: [], successCount: 0, errorCount: 0 };
+    }
+
+    const deleted: string[] = [];
+    const errors: BatchDeleteError[] = [];
+
+    // S3 DeleteObjectsCommand accepts maximum 1,000 objects per call
+    const chunkSize = 1000;
+    for (let i = 0; i < keys.length; i += chunkSize) {
+      const chunk = keys.slice(i, i + chunkSize);
+      const command = new DeleteObjectsCommand({
+        Bucket: this.bucket,
+        Delete: {
+          Objects: chunk.map((key) => ({ Key: key })),
+          Quiet: false,
+        },
+      });
+
+      const response = await this.client.send(command);
+
+      if (response.Deleted) {
+        for (const item of response.Deleted) {
+          if (item.Key) deleted.push(item.Key);
+        }
+      }
+
+      if (response.Errors) {
+        for (const err of response.Errors) {
+          if (err.Key) {
+            errors.push({
+              key: err.Key,
+              message: err.Message || err.Code || 'Failed to delete object from storage',
+            });
+          }
+        }
+      }
+    }
+
+    return {
+      deleted,
+      errors,
+      successCount: deleted.length,
+      errorCount: errors.length,
+    };
   }
 
   /**
