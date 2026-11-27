@@ -3,6 +3,7 @@ import {
   PutObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
+  CopyObjectCommand,
   DeleteObjectCommand,
   DeleteObjectsCommand,
   ListObjectsV2Command,
@@ -23,6 +24,8 @@ import {
   BatchDeleteResult,
   BatchDeleteError,
   StorageMetadata,
+  CopyResult,
+  MoveResult,
 } from './storage.interface.js';
 import { detectCategory, formatBytes, MediaCategory } from '../utils/media-type.util.js';
 
@@ -285,6 +288,44 @@ export class S3StorageService implements IStorageService {
       }
       throw error;
     }
+  }
+
+  /**
+   * Copies an object within storage to a new key.
+   * Handles S3 / MinIO CopySource format `${bucket}/${key}`.
+   */
+  async copy(sourceKey: string, destinationKey: string): Promise<CopyResult> {
+    const copySource = `${this.bucket}/${encodeURIComponent(sourceKey).replace(/%2F/g, '/')}`;
+    const command = new CopyObjectCommand({
+      Bucket: this.bucket,
+      CopySource: copySource,
+      Key: destinationKey,
+      MetadataDirective: 'COPY',
+    });
+
+    const response = await this.client.send(command);
+
+    return {
+      sourceKey,
+      destinationKey,
+      bucket: this.bucket,
+      eTag: response.CopyObjectResult?.ETag?.replace(/"/g, ''),
+    };
+  }
+
+  /**
+   * Moves/renames an object by copying to the new destination key and deleting the source.
+   */
+  async move(sourceKey: string, destinationKey: string): Promise<MoveResult> {
+    const copyResult = await this.copy(sourceKey, destinationKey);
+    await this.delete(sourceKey);
+
+    return {
+      sourceKey,
+      destinationKey,
+      bucket: this.bucket,
+      eTag: copyResult.eTag,
+    };
   }
 
   /**

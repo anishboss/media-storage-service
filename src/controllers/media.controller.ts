@@ -394,6 +394,88 @@ export class MediaController {
     }
   };
 
+  /**
+   * 12. Copy Media Object
+   */
+  public copyMedia = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { sourceKey, destinationKey } = req.body;
+
+      if (
+        !sourceKey ||
+        typeof sourceKey !== 'string' ||
+        !destinationKey ||
+        typeof destinationKey !== 'string'
+      ) {
+        res.status(400).json({
+          success: false,
+          message: '"sourceKey" and "destinationKey" are both required strings',
+        });
+        return;
+      }
+
+      const result = await this.service.copy(sourceKey.trim(), destinationKey.trim());
+
+      res.status(200).json({
+        success: true,
+        message: `Object copied successfully from "${sourceKey}" to "${destinationKey}"`,
+        data: result,
+      });
+    } catch (error: unknown) {
+      const err = error as { name?: string; $metadata?: { httpStatusCode?: number } };
+      if (err.name === 'NoSuchKey' || err.$metadata?.httpStatusCode === 404) {
+        res.status(404).json({ success: false, message: 'Source object not found in storage' });
+        return;
+      }
+      next(error);
+    }
+  };
+
+  /**
+   * 13. Move / Rename Media Object
+   */
+  public moveMedia = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { sourceKey, destinationKey } = req.body;
+
+      if (
+        !sourceKey ||
+        typeof sourceKey !== 'string' ||
+        !destinationKey ||
+        typeof destinationKey !== 'string'
+      ) {
+        res.status(400).json({
+          success: false,
+          message: '"sourceKey" and "destinationKey" are both required strings',
+        });
+        return;
+      }
+
+      if (sourceKey.trim() === destinationKey.trim()) {
+        res.status(400).json({
+          success: false,
+          message: '"destinationKey" must be different from "sourceKey"',
+        });
+        return;
+      }
+
+      const result = await this.service.move(sourceKey.trim(), destinationKey.trim());
+
+      res.status(200).json({
+        success: true,
+        message: `Object moved/renamed successfully to "${destinationKey}"`,
+        data: result,
+      });
+    } catch (error: unknown) {
+      const err = error as { name?: string; $metadata?: { httpStatusCode?: number } };
+      if (err.name === 'NoSuchKey' || err.$metadata?.httpStatusCode === 404) {
+        res.status(404).json({ success: false, message: 'Source object not found in storage' });
+        return;
+      }
+      next(error);
+    }
+  };
+
   // Static backward compatibility wrappers for existing server routes
   private static defaultController = new MediaController();
   public static uploadDirect = (req: Request, res: Response, next: NextFunction) =>
@@ -418,4 +500,8 @@ export class MediaController {
     MediaController.defaultController.getMetadata(req, res, next);
   public static checkExists = (req: Request, res: Response, next: NextFunction) =>
     MediaController.defaultController.checkExists(req, res, next);
+  public static copyMedia = (req: Request, res: Response, next: NextFunction) =>
+    MediaController.defaultController.copyMedia(req, res, next);
+  public static moveMedia = (req: Request, res: Response, next: NextFunction) =>
+    MediaController.defaultController.moveMedia(req, res, next);
 }

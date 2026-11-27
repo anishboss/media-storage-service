@@ -675,6 +675,126 @@
           </div>
         </div>
       </div>
+
+      <!-- Move / Rename Modal -->
+      <div
+        id="moveModal"
+        onclick="if (event.target === this) closeMoveModal();"
+        style="
+          display: none;
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.75);
+          z-index: 1000;
+          align-items: center;
+          justify-content: center;
+          padding: 1rem;
+          backdrop-filter: blur(4px);
+        "
+      >
+        <div
+          style="
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            width: 100%;
+            max-width: 520px;
+            padding: 1.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+          "
+        >
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 1rem;
+              border-bottom: 1px solid var(--border);
+              padding-bottom: 0.75rem;
+            "
+          >
+            <h3 style="font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem">
+              ✏️ Move / Rename Object
+            </h3>
+            <button
+              onclick="closeMoveModal()"
+              style="
+                width: auto;
+                background: none;
+                border: none;
+                font-size: 1.5rem;
+                color: var(--text-muted);
+                cursor: pointer;
+                padding: 0 0.5rem;
+                line-height: 1;
+              "
+            >
+              &times;
+            </button>
+          </div>
+          <div style="font-size: 0.85rem; line-height: 1.6">
+            <div style="margin-bottom: 0.75rem">
+              <label style="color: var(--text-muted); display: block; margin-bottom: 0.25rem"
+                >Current Storage Key:</label
+              >
+              <input
+                type="text"
+                id="moveSourceKey"
+                readonly
+                style="
+                  width: 100%;
+                  padding: 0.5rem 0.75rem;
+                  background: #0f172a;
+                  border: 1px solid var(--border);
+                  border-radius: 0.4rem;
+                  color: #94a3b8;
+                  font-family: monospace;
+                  font-size: 0.8rem;
+                "
+              />
+            </div>
+            <div style="margin-bottom: 1.25rem">
+              <label
+                style="color: #f8fafc; font-weight: 600; display: block; margin-bottom: 0.25rem"
+                >New Destination Key:</label
+              >
+              <input
+                type="text"
+                id="moveDestKey"
+                placeholder="e.g. images/my-renamed-file.png"
+                style="
+                  width: 100%;
+                  padding: 0.6rem 0.75rem;
+                  background: #0f172a;
+                  border: 1px solid var(--accent);
+                  border-radius: 0.4rem;
+                  color: #f8fafc;
+                  font-family: monospace;
+                  font-size: 0.85rem;
+                  outline: none;
+                "
+              />
+            </div>
+            <div
+              id="moveStatusMsg"
+              style="min-height: 1.2rem; margin-bottom: 0.75rem; font-size: 0.8rem"
+            ></div>
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end">
+              <button class="btn-sm btn-secondary" onclick="closeMoveModal()" style="width: auto">
+                Cancel
+              </button>
+              <button
+                class="btn-sm"
+                id="confirmMoveBtn"
+                onclick="executeMove()"
+                style="width: auto"
+              >
+                Confirm Move / Rename
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script>
@@ -1032,6 +1152,7 @@
             <div class="media-actions">
               <button class="btn-sm" onclick="previewMedia('${escapeHtml(item.key)}')">View / Play</button>
               <button class="btn-sm btn-secondary" onclick="inspectMetadata('${escapeHtml(item.key)}')">ℹ️ Info</button>
+              <button class="btn-sm btn-secondary" onclick="openMoveModal('${escapeHtml(item.key)}')">✏️ Rename</button>
               <a href="${item.downloadUrl}" class="btn-sm btn-secondary" style="text-decoration:none; display:flex; align-items:center;">Download</a>
               <button class="btn-sm btn-danger" onclick="deleteMedia('${escapeHtml(item.key)}')">Delete</button>
             </div>
@@ -1137,6 +1258,70 @@
             }, 2000);
           }
         });
+      }
+
+      function openMoveModal(key) {
+        const modal = document.getElementById('moveModal');
+        const sourceInput = document.getElementById('moveSourceKey');
+        const destInput = document.getElementById('moveDestKey');
+        const statusMsg = document.getElementById('moveStatusMsg');
+
+        sourceInput.value = key;
+        destInput.value = key;
+        statusMsg.textContent = '';
+        statusMsg.style.color = '';
+        modal.style.display = 'flex';
+        destInput.focus();
+        destInput.select();
+      }
+
+      function closeMoveModal() {
+        const modal = document.getElementById('moveModal');
+        if (modal) modal.style.display = 'none';
+      }
+
+      async function executeMove() {
+        const sourceKey = document.getElementById('moveSourceKey').value.trim();
+        const destinationKey = document.getElementById('moveDestKey').value.trim();
+        const statusMsg = document.getElementById('moveStatusMsg');
+        const confirmBtn = document.getElementById('confirmMoveBtn');
+
+        if (!destinationKey || destinationKey === sourceKey) {
+          statusMsg.style.color = 'var(--danger)';
+          statusMsg.textContent = 'Please specify a different destination key';
+          return;
+        }
+
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Moving...';
+        statusMsg.style.color = '#38bdf8';
+        statusMsg.textContent = 'Executing cloud move/rename...';
+
+        try {
+          const res = await fetch('/api/media/move', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sourceKey, destinationKey }),
+          });
+
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || 'Move failed');
+
+          statusMsg.style.color = 'var(--success)';
+          statusMsg.textContent = 'Successfully moved / renamed!';
+
+          setTimeout(() => {
+            closeMoveModal();
+            loadMediaList();
+            loadStorageStats();
+          }, 600);
+        } catch (err) {
+          statusMsg.style.color = 'var(--danger)';
+          statusMsg.textContent = err.message;
+        } finally {
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = 'Confirm Move / Rename';
+        }
       }
 
       function getSelectedKeys() {
