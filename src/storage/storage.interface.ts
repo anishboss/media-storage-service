@@ -85,6 +85,20 @@ export interface StorageMetadata {
   metadata: Record<string, string>;
 }
 
+export interface CopyResult {
+  sourceKey: string;
+  destinationKey: string;
+  bucket: string;
+  eTag?: string;
+}
+
+export interface MoveResult {
+  sourceKey: string;
+  destinationKey: string;
+  bucket: string;
+  eTag?: string;
+}
+
 /**
  * Storage Service Interface
  * All storage implementations (S3, MinIO, Azure Blob, Google Cloud Storage, Local Disk)
@@ -106,4 +120,6 @@ export interface IStorageService {
   getStats(prefix?: string): Promise<StorageStats>;
   getMetadata(key: string): Promise<StorageMetadata>;
   exists(key: string): Promise<boolean>;
+  copy(sourceKey: string, destinationKey: string): Promise<CopyResult>;
+  move(sourceKey: string, destinationKey: string): Promise<MoveResult>;
 }

@@ -124,6 +124,8 @@ Visit **`http://localhost:4000`** in your browser to test:
 | `GET`    | `/api/media/:key/download`        | Force file download (`Content-Disposition: attachment`).                   |
 | `GET`    | `/api/media/:key/presigned-url`   | Get time-limited signed download/view URL.                                 |
 | `POST`   | `/api/media/batch-delete`         | Batch delete multiple media objects (`{ keys: string[] }`).                |
+| `POST`   | `/api/media/copy`                 | Copy media object within storage (`{ sourceKey, destinationKey }`).        |
+| `POST`   | `/api/media/move`                 | Move / Rename media object (`{ sourceKey, destinationKey }`).              |
 | `DELETE` | `/api/media/:key`                 | Delete single media object from storage.                                   |
 
 _(Note: `/api/videos/*` routes remain fully supported as backward-compatible aliases)._

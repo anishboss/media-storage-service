@@ -39,6 +39,13 @@ router.get('/:key/presigned-url', MediaController.getPresignedDownloadUrl);
 router.post('/batch-delete', MediaController.deleteBatch);
 router.delete('/batch', MediaController.deleteBatch);
 
+// Copy media object within storage
+router.post('/copy', MediaController.copyMedia);
+
+// Move / Rename media object within storage
+router.post('/move', MediaController.moveMedia);
+router.put('/move', MediaController.moveMedia);
+
 // Delete file/image/video
 router.delete('/:key', MediaController.deleteMedia);
 
