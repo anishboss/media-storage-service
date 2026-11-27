@@ -28,6 +28,10 @@ router.get('/:key/download', MediaController.downloadMedia);
 // Pre-signed download/playback URL
 router.get('/:key/presigned-url', MediaController.getPresignedDownloadUrl);
 
+// Batch delete multiple files/images/videos
+router.post('/batch-delete', MediaController.deleteBatch);
+router.delete('/batch', MediaController.deleteBatch);
+
 // Delete file/image/video
 router.delete('/:key', MediaController.deleteMedia);
 
